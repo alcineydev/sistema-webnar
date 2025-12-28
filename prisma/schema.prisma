@@ -8,16 +8,206 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// ADMIN / USUÁRIOS
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String
+  role          UserRole  @default(ADMIN)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  webinars      Webinar[]
 }
 
-enum Role {
-  USER
+enum UserRole {
+  SUPER_ADMIN
   ADMIN
+}
+
+// WEBINAR
+model Webinar {
+  id              String         @id @default(cuid())
+  name            String
+  slug            String         @unique
+  description     String?
+  status          WebinarStatus  @default(DRAFT)
+  logoUrl         String?
+  bannerUrl       String?
+  primaryColor    String?        @default("#6366f1")
+  offerUrl        String?
+  offerButtonText String?        @default("Quero Aproveitar")
+  urgencyMessage  String?
+  countdownEnd    DateTime?
+  releaseType     ReleaseType    @default(IMMEDIATE)
+  activeCampaignListId  String?
+  n8nWebhookUrl         String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdById     String
+  createdBy       User           @relation(fields: [createdById], references: [id])
+  lessons         Lesson[]
+  leads           Lead[]
+
+  @@index([slug])
+  @@index([status])
+}
+
+enum WebinarStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ReleaseType {
+  IMMEDIATE
+  SCHEDULED
+  SEQUENTIAL
+}
+
+// AULAS
+model Lesson {
+  id              String        @id @default(cuid())
+  title           String
+  slug            String
+  description     String?
+  videoUrl        String
+  videoDuration   Int?
+  thumbnailUrl    String?
+  order           Int           @default(0)
+  isActive        Boolean       @default(true)
+  releaseAt       DateTime?
+  offerUrl        String?
+  offerButtonText String?
+  offerShowAt     Int?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  webinarId       String
+  webinar         Webinar       @relation(fields: [webinarId], references: [id], onDelete: Cascade)
+  progress        LeadProgress[]
+  events          LeadEvent[]
+
+  @@unique([webinarId, slug])
+  @@index([webinarId, order])
+}
+
+// LEADS
+model Lead {
+  id              String        @id @default(cuid())
+  email           String
+  name            String
+  phone           String?
+  status          LeadStatus    @default(ACTIVE)
+  lastAccessAt    DateTime?
+  totalWatchTime  Int           @default(0)
+  pushSubscription String?
+  pushEnabled     Boolean       @default(false)
+  activeCampaignId String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  webinarId       String
+  webinar         Webinar       @relation(fields: [webinarId], references: [id], onDelete: Cascade)
+  progress        LeadProgress[]
+  events          LeadEvent[]
+
+  @@unique([webinarId, email])
+  @@index([webinarId, status])
+  @@index([webinarId, lastAccessAt])
+}
+
+enum LeadStatus {
+  ACTIVE
+  INACTIVE
+  CONVERTED
+  UNSUBSCRIBED
+}
+
+// PROGRESSO DO LEAD
+model LeadProgress {
+  id              String        @id @default(cuid())
+  watchedSeconds  Int           @default(0)
+  percentWatched  Float         @default(0)
+  isCompleted     Boolean       @default(false)
+  completedAt     DateTime?
+  offerShown      Boolean       @default(false)
+  offerShownAt    DateTime?
+  offerClicked    Boolean       @default(false)
+  offerClickedAt  DateTime?
+  offerClickCount Int           @default(0)
+  startedAt       DateTime      @default(now())
+  lastWatchedAt   DateTime      @default(now())
+  leadId          String
+  lead            Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lessonId        String
+  lesson          Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([leadId, lessonId])
+  @@index([leadId])
+  @@index([lessonId])
+}
+
+// EVENTOS (TRACKING)
+model LeadEvent {
+  id              String        @id @default(cuid())
+  eventType       EventType
+  data            Json?
+  videoTime       Int?
+  createdAt       DateTime      @default(now())
+  userAgent       String?
+  ipAddress       String?
+  leadId          String
+  lead            Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lessonId        String?
+  lesson          Lesson?       @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  @@index([leadId, eventType])
+  @@index([lessonId, eventType])
+  @@index([createdAt])
+}
+
+enum EventType {
+  LEAD_REGISTERED
+  WEBINAR_ACCESSED
+  VIDEO_PLAY
+  VIDEO_PAUSE
+  VIDEO_SEEK
+  VIDEO_PROGRESS_25
+  VIDEO_PROGRESS_50
+  VIDEO_PROGRESS_75
+  VIDEO_COMPLETED
+  VIDEO_ABANDONED
+  OFFER_SHOWN
+  OFFER_CLICKED
+  PUSH_SUBSCRIBED
+  PUSH_UNSUBSCRIBED
+  PUSH_RECEIVED
+  PUSH_CLICKED
+  LEAD_INACTIVE
+}
+
+// PUSH NOTIFICATIONS
+model PushNotification {
+  id              String        @id @default(cuid())
+  title           String
+  body            String
+  url             String?
+  icon            String?
+  status          PushStatus    @default(PENDING)
+  sentAt          DateTime?
+  error           String?
+  scheduledFor    DateTime?
+  webinarId       String?
+  leadId          String?
+  createdAt       DateTime      @default(now())
+
+  @@index([status, scheduledFor])
+}
+
+enum PushStatus {
+  PENDING
+  SENT
+  FAILED
 }
