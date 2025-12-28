@@ -4,7 +4,7 @@ import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LogOut, Video, LayoutDashboard } from "lucide-react"
+import { LogOut, Video, LayoutDashboard, Loader2 } from "lucide-react"
 
 export function AdminHeader() {
   const { data: session, status } = useSession()
@@ -15,7 +15,7 @@ export function AdminHeader() {
     return null
   }
 
-  // Mostra loading enquanto carrega
+  // Mostra loading enquanto carrega a sessão
   if (status === "loading") {
     return (
       <header className="bg-white border-b border-slate-200">
@@ -24,14 +24,31 @@ export function AdminHeader() {
             <h1 className="text-xl font-semibold text-slate-900">
               Sistema Webinar
             </h1>
+            <nav className="flex items-center gap-4">
+              <span className="flex items-center gap-2 text-sm text-slate-400">
+                <LayoutDashboard className="w-4 h-4" />
+                Dashboard
+              </span>
+              <span className="flex items-center gap-2 text-sm text-slate-400">
+                <Video className="w-4 h-4" />
+                Webinars
+              </span>
+            </nav>
           </div>
-          <div className="h-8 w-32 animate-pulse bg-slate-200 rounded"></div>
+          <div className="flex items-center gap-4">
+            <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+          </div>
         </div>
       </header>
     )
   }
 
-  // Mostra header completo (com ou sem sessão - a proteção fica nas páginas)
+  // Se não tem sessão após carregar, não mostra header (vai redirecionar para login)
+  if (!session) {
+    return null
+  }
+
+  // Mostra header completo com sessão carregada
   return (
     <header className="bg-white border-b border-slate-200">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -57,11 +74,9 @@ export function AdminHeader() {
           </nav>
         </div>
         <div className="flex items-center gap-4">
-          {session?.user?.email && (
-            <span className="text-sm text-slate-500">
-              {session.user.email}
-            </span>
-          )}
+          <span className="text-sm text-slate-500">
+            {session.user?.email}
+          </span>
           <Button
             variant="outline"
             size="sm"

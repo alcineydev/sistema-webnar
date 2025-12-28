@@ -3,11 +3,27 @@ import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "./prisma"
 
+const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith("https://")
+const cookiePrefix = useSecureCookies ? "__Secure-" : ""
+const hostName = new URL(process.env.NEXTAUTH_URL || "http://localhost:3000").hostname
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/admin/login",
+  },
+  cookies: {
+    sessionToken: {
+      name: `${cookiePrefix}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+        domain: hostName === "localhost" ? undefined : hostName,
+      },
+    },
   },
   providers: [
     Credentials({
@@ -63,4 +79,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return session
     },
   },
+  trustHost: true,
 })
