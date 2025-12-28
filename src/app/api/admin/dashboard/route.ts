@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { getToken } from "next-auth/jwt"
 import { prisma } from "@/lib/prisma"
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const token = await getToken({
-      req: request as any,
+      req: request,
       secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
     })
 
