@@ -8,7 +8,7 @@ interface Lesson {
   title: string
   slug: string
   description: string | null
-  duration: number | null
+  videoDuration: number | null
   order: number
 }
 
@@ -29,7 +29,7 @@ export default async function WebinarLessonsPage({ params }: PageProps) {
           title: true,
           slug: true,
           description: true,
-          duration: true,
+          videoDuration: true,
           order: true,
         },
       },

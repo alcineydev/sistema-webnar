@@ -9,7 +9,7 @@ interface LessonCardProps {
     title: string
     slug: string
     description: string | null
-    duration: number | null
+    videoDuration: number | null
     order: number
   }
   webinarSlug: string
@@ -56,7 +56,7 @@ export function LessonCard({ lesson, webinarSlug, isCompleted }: LessonCardProps
             )}
             <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
               <Clock className="h-3.5 w-3.5" />
-              <span>{formatDuration(lesson.duration)}</span>
+              <span>{formatDuration(lesson.videoDuration)}</span>
             </div>
           </div>
         </div>
