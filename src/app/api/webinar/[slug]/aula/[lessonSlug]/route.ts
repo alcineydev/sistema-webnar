@@ -23,7 +23,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         lessons: {
           where: { isActive: true },
           orderBy: { order: "asc" },
-          select: { id: true, slug: true, title: true, order: true },
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            order: true,
+            thumbnailUrl: true,
+            releaseAt: true,
+          },
         },
       },
     })
@@ -55,9 +62,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const currentIndex = webinar.lessons.findIndex((l: { id: string }) => l.id === lesson.id)
-    const prevLesson = currentIndex > 0 ? webinar.lessons[currentIndex - 1] : null
-    const nextLesson =
-      currentIndex < webinar.lessons.length - 1 ? webinar.lessons[currentIndex + 1] : null
+    const now = new Date()
+
+    const allLessons = webinar.lessons.map((l: { id: string; title: string; slug: string; order: number; thumbnailUrl: string | null; releaseAt: Date | null }) => ({
+      id: l.id,
+      title: l.title,
+      slug: l.slug,
+      order: l.order,
+      thumbnailUrl: l.thumbnailUrl,
+      isLocked: l.releaseAt ? new Date(l.releaseAt) > now : false,
+    }))
 
     return NextResponse.json({
       id: lesson.id,
@@ -73,8 +87,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         offerUrl: webinar.offerUrl,
         offerButtonText: webinar.offerButtonText,
       },
-      prevLesson: prevLesson ? { slug: prevLesson.slug, title: prevLesson.title } : null,
-      nextLesson: nextLesson ? { slug: nextLesson.slug, title: nextLesson.title } : null,
+      allLessons,
+      currentIndex,
     })
   } catch (error) {
     console.error("Lesson API error:", error)

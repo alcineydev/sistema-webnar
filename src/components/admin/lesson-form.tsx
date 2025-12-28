@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 import { createLesson, updateLesson } from "@/actions/lesson.actions"
+import { ImageUpload } from "@/components/admin/image-upload"
 
 interface Lesson {
   id: string
@@ -120,17 +121,15 @@ export function LessonForm({ webinarId, lesson }: LessonFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="thumbnailUrl">URL da Thumbnail</Label>
-              <Input
-                id="thumbnailUrl"
-                name="thumbnailUrl"
-                type="url"
-                placeholder="https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg"
-                defaultValue={lesson?.thumbnailUrl || ""}
+              <Label>Thumbnail da Aula</Label>
+              <ImageUpload
+                value={lesson?.thumbnailUrl}
+                onChange={(url) => {
+                  const input = document.querySelector('input[name="thumbnailUrl"]') as HTMLInputElement
+                  if (input) input.value = url || ""
+                }}
+                folder="thumbnails"
               />
-              <p className="text-xs text-slate-500">
-                Dica: Para vídeos do YouTube, use: https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg
-              </p>
             </div>
 
             <div className="flex items-center justify-between">
