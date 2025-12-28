@@ -1,5 +1,4 @@
 import { auth, signOut } from "@/lib/auth"
-import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LogOut, Video, LayoutDashboard } from "lucide-react"
 import Link from "next/link"
@@ -11,10 +10,12 @@ export default async function AdminLayout({
 }) {
   const session = await auth()
 
+  // Se não está logado, mostra só o children (página de login)
   if (!session) {
-    redirect("/admin/login")
+    return <>{children}</>
   }
 
+  // Se está logado, mostra o layout completo
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200">
