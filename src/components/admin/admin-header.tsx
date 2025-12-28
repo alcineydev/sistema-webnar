@@ -2,26 +2,36 @@
 
 import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LogOut, Video, LayoutDashboard } from "lucide-react"
 
 export function AdminHeader() {
   const { data: session, status } = useSession()
+  const pathname = usePathname()
 
+  // Na página de login, não mostra header
+  if (pathname === "/admin/login") {
+    return null
+  }
+
+  // Mostra loading enquanto carrega
   if (status === "loading") {
     return (
       <header className="bg-white border-b border-slate-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="h-8 animate-pulse bg-slate-200 rounded w-48"></div>
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <h1 className="text-xl font-semibold text-slate-900">
+              Sistema Webinar
+            </h1>
+          </div>
+          <div className="h-8 w-32 animate-pulse bg-slate-200 rounded"></div>
         </div>
       </header>
     )
   }
 
-  if (!session) {
-    return null
-  }
-
+  // Mostra header completo (com ou sem sessão - a proteção fica nas páginas)
   return (
     <header className="bg-white border-b border-slate-200">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -47,9 +57,11 @@ export function AdminHeader() {
           </nav>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-500">
-            {session.user?.email}
-          </span>
+          {session?.user?.email && (
+            <span className="text-sm text-slate-500">
+              {session.user.email}
+            </span>
+          )}
           <Button
             variant="outline"
             size="sm"
