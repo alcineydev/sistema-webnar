@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { getToken } from "next-auth/jwt"
 import { prisma } from "@/lib/prisma"
 
+export const dynamic = "force-dynamic"
+
 export async function GET(request: NextRequest) {
   try {
     const token = await getToken({
@@ -9,11 +11,22 @@ export async function GET(request: NextRequest) {
       secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
     })
 
-    if (!token?.id) {
+    console.log("[Dashboard API] Token:", token ? "found" : "not found")
+
+    if (!token?.email) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
-    const userId = token.id as string
+    // Busca o usuário pelo email
+    const user = await prisma.user.findUnique({
+      where: { email: token.email as string }
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+    }
+
+    const userId = user.id
 
     const [webinarCount, leadCount, todayLeads, webinars, convertedLeads] = await Promise.all([
       prisma.webinar.count({ where: { createdById: userId } }),
@@ -41,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ webinarCount, leadCount, todayLeads, conversionRate, webinars })
   } catch (error) {
-    console.error("Dashboard API error:", error)
+    console.error("[Dashboard API] Error:", error)
     return NextResponse.json({ error: "Erro interno" }, { status: 500 })
   }
 }
