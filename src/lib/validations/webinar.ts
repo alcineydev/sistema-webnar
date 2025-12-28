@@ -19,6 +19,7 @@ export const createLessonSchema = z.object({
   slug: z.string().min(3, "Slug deve ter pelo menos 3 caracteres").regex(/^[a-z0-9-]+$/, "Slug deve conter apenas letras minúsculas, números e hífens"),
   description: z.string().optional(),
   videoUrl: z.string().url("URL do vídeo inválida"),
+  thumbnailUrl: z.string().url().optional().or(z.literal("")),
   order: z.number().int().min(0).default(0),
   isActive: z.boolean().default(true),
   releaseAt: z.date().optional().nullable(),

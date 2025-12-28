@@ -1,12 +1,11 @@
 "use client"
 
 import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
 import { Moon, Sun } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react"
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme()
+  const { setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -15,24 +14,24 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" className="text-slate-400">
-        <Sun className="h-5 w-5" />
-      </Button>
+      <button className="p-2 rounded-lg bg-zinc-800">
+        <Sun className="h-5 w-5 text-zinc-400" />
+      </button>
     )
   }
 
+  const isDark = resolvedTheme === "dark"
+
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="text-slate-400 hover:text-white hover:bg-white/10"
+    <button
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className={`p-2 rounded-lg transition-colors ${
+        isDark
+          ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-100"
+          : "bg-zinc-200 hover:bg-zinc-300 text-zinc-600 hover:text-zinc-900"
+      }`}
     >
-      {theme === "dark" ? (
-        <Sun className="h-5 w-5" />
-      ) : (
-        <Moon className="h-5 w-5" />
-      )}
-    </Button>
+      {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+    </button>
   )
 }

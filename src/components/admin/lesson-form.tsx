@@ -17,6 +17,7 @@ interface Lesson {
   slug: string
   description?: string | null
   videoUrl: string
+  thumbnailUrl?: string | null
   isActive: boolean
   releaseAt?: Date | null
   offerShowAt?: number | null
@@ -116,6 +117,20 @@ export function LessonForm({ webinarId, lesson }: LessonFormProps) {
                 required
                 placeholder="https://www.youtube.com/watch?v=..."
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="thumbnailUrl">URL da Thumbnail</Label>
+              <Input
+                id="thumbnailUrl"
+                name="thumbnailUrl"
+                type="url"
+                placeholder="https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg"
+                defaultValue={lesson?.thumbnailUrl || ""}
+              />
+              <p className="text-xs text-slate-500">
+                Dica: Para vídeos do YouTube, use: https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg
+              </p>
             </div>
 
             <div className="flex items-center justify-between">

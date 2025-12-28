@@ -61,7 +61,7 @@ export default function LessonPlayerPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950">
+      <div className="flex min-h-screen items-center justify-center bg-black">
         <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
       </div>
     )
@@ -69,7 +69,7 @@ export default function LessonPlayerPage() {
 
   if (error || !data) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-black">
         <p className="text-red-400">{error || "Erro ao carregar aula"}</p>
         <Link href={`/w/${slug}`}>
           <Button variant="outline" className="mt-4">
@@ -83,13 +83,17 @@ export default function LessonPlayerPage() {
   const videoId = extractYouTubeId(data.videoUrl)
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      <WebinarHeader webinarName={data.webinar.name} />
+    <div className="min-h-screen bg-black">
+      <WebinarHeader
+        webinarName={data.webinar.name}
+        webinarSlug={data.webinar.slug}
+        logoUrl={data.webinar.logoUrl}
+      />
 
       <main className="container mx-auto px-4 py-6">
         <Link
           href={`/w/${slug}`}
-          className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors mb-6"
+          className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors mb-6"
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar para as aulas
@@ -104,22 +108,22 @@ export default function LessonPlayerPage() {
                 onOfferTrigger={() => setShowOffer(true)}
               />
             ) : (
-              <div className="aspect-video rounded-xl bg-slate-800 flex items-center justify-center">
-                <p className="text-slate-400">Vídeo não disponível</p>
+              <div className="aspect-video rounded-xl bg-zinc-800 flex items-center justify-center">
+                <p className="text-zinc-400">Vídeo não disponível</p>
               </div>
             )}
 
             <div className="mt-6">
               <h1 className="text-2xl font-bold text-white">{data.title}</h1>
               {data.description && (
-                <p className="mt-4 text-slate-400">{data.description}</p>
+                <p className="mt-4 text-zinc-400">{data.description}</p>
               )}
             </div>
 
             <div className="mt-8 flex items-center gap-4">
               {data.prevLesson && (
                 <Link href={`/w/${slug}/aula/${data.prevLesson.slug}`}>
-                  <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800">
+                  <Button variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Anterior
                   </Button>
@@ -138,14 +142,14 @@ export default function LessonPlayerPage() {
           <div className="lg:col-span-1">
             {/* Offer card - shows when triggered or if no offerShowAt time */}
             {(showOffer || !data.offerShowAt) && data.webinar.offerUrl && (
-              <div className="sticky top-24 rounded-xl border border-indigo-500/30 bg-gradient-to-br from-indigo-900/50 to-slate-900 p-6 animate-in fade-in slide-in-from-right-4">
+              <div className="sticky top-24 rounded-xl border border-indigo-500/30 bg-gradient-to-br from-indigo-900/50 to-zinc-900 p-6 animate-in fade-in slide-in-from-right-4">
                 <div className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">
                   Oferta Especial
                 </div>
                 <h3 className="mt-2 text-xl font-bold text-white">
                   Aproveite esta oportunidade!
                 </h3>
-                <p className="mt-2 text-sm text-slate-300">
+                <p className="mt-2 text-sm text-zinc-300">
                   Clique no botão abaixo para acessar a oferta exclusiva.
                 </p>
                 <a
