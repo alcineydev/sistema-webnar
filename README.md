@@ -7,4 +7,12 @@ Sistema profissional de webinar com área de membros.
 - TypeScript
 - Prisma + PostgreSQL
 - Tailwind CSS
+- Shadcn/UI
 
+## Desenvolvimento
+
+```bash
+npm run dev
+```
+
+Acesse http://localhost:3000
