@@ -1,12 +1,12 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { auth } from "@/lib/auth"
+import { getServerSession } from "@/lib/auth-helper"
 import { prisma } from "@/lib/prisma"
 import { createLessonSchema, updateLessonSchema } from "@/lib/validations/webinar"
 
 export async function getLessonsByWebinarId(webinarId: string) {
-  const session = await auth()
+  const session = await getServerSession()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   return prisma.lesson.findMany({
@@ -16,7 +16,7 @@ export async function getLessonsByWebinarId(webinarId: string) {
 }
 
 export async function getLessonById(id: string) {
-  const session = await auth()
+  const session = await getServerSession()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   return prisma.lesson.findUnique({
@@ -26,7 +26,7 @@ export async function getLessonById(id: string) {
 }
 
 export async function createLesson(webinarId: string, data: FormData) {
-  const session = await auth()
+  const session = await getServerSession()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   const webinar = await prisma.webinar.findFirst({
@@ -72,7 +72,7 @@ export async function createLesson(webinarId: string, data: FormData) {
 }
 
 export async function updateLesson(id: string, webinarId: string, data: FormData) {
-  const session = await auth()
+  const session = await getServerSession()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   const formData = {
@@ -104,7 +104,7 @@ export async function updateLesson(id: string, webinarId: string, data: FormData
 }
 
 export async function deleteLesson(id: string, webinarId: string) {
-  const session = await auth()
+  const session = await getServerSession()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   await prisma.lesson.delete({ where: { id } })
@@ -113,7 +113,7 @@ export async function deleteLesson(id: string, webinarId: string) {
 }
 
 export async function reorderLessons(webinarId: string, lessonIds: string[]) {
-  const session = await auth()
+  const session = await getServerSession()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   await Promise.all(

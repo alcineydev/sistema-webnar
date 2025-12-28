@@ -2,25 +2,30 @@ import Link from "next/link"
 import { Plus, Video, Users, Calendar, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { auth } from "@/lib/auth"
+import { getServerSession } from "@/lib/auth-helper"
 import { prisma } from "@/lib/prisma"
+import { redirect } from "next/navigation"
 
 export default async function AdminDashboard() {
-  const session = await auth()
+  const session = await getServerSession()
+
+  if (!session?.user?.id) {
+    redirect("/admin/login")
+  }
 
   const [webinarCount, leadCount, todayLeads, webinars] = await Promise.all([
-    prisma.webinar.count({ where: { createdById: session?.user?.id } }),
+    prisma.webinar.count({ where: { createdById: session.user.id } }),
     prisma.lead.count({
-      where: { webinar: { createdById: session?.user?.id } }
+      where: { webinar: { createdById: session.user.id } }
     }),
     prisma.lead.count({
       where: {
-        webinar: { createdById: session?.user?.id },
+        webinar: { createdById: session.user.id },
         createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
       }
     }),
     prisma.webinar.findMany({
-      where: { createdById: session?.user?.id },
+      where: { createdById: session.user.id },
       take: 5,
       orderBy: { createdAt: "desc" },
       include: { _count: { select: { leads: true, lessons: true } } }
@@ -29,7 +34,7 @@ export default async function AdminDashboard() {
 
   const convertedLeads = await prisma.lead.count({
     where: {
-      webinar: { createdById: session?.user?.id },
+      webinar: { createdById: session.user.id },
       status: "CONVERTED"
     }
   })
