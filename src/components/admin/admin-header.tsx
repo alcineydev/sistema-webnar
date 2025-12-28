@@ -1,91 +1,115 @@
 "use client"
 
 import { useSession, signOut } from "next-auth/react"
-import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LogOut, Video, LayoutDashboard, Loader2 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Bell, Search, ChevronDown, LogOut, User, Settings } from "lucide-react"
+import { Input } from "@/components/ui/input"
+
+const pageTitles: Record<string, string> = {
+  "/admin": "Dashboard",
+  "/admin/webinars": "Webinars",
+  "/admin/webinars/new": "Novo Webinar",
+  "/admin/leads": "Leads",
+  "/admin/analytics": "Analytics",
+  "/admin/settings": "Configurações",
+}
 
 export function AdminHeader() {
   const { data: session, status } = useSession()
   const pathname = usePathname()
 
-  // Na página de login, não mostra header
-  if (pathname === "/admin/login") {
-    return null
+  const getPageTitle = () => {
+    if (pageTitles[pathname]) return pageTitles[pathname]
+    if (pathname.startsWith("/admin/webinars/") && pathname.includes("/lessons")) return "Aulas"
+    if (pathname.startsWith("/admin/webinars/")) return "Editar Webinar"
+    return "Admin"
   }
 
-  // Mostra loading enquanto carrega a sessão
   if (status === "loading") {
     return (
-      <header className="bg-white border-b border-slate-200">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <h1 className="text-xl font-semibold text-slate-900">
-              Sistema Webinar
-            </h1>
-            <nav className="flex items-center gap-4">
-              <span className="flex items-center gap-2 text-sm text-slate-400">
-                <LayoutDashboard className="w-4 h-4" />
-                Dashboard
-              </span>
-              <span className="flex items-center gap-2 text-sm text-slate-400">
-                <Video className="w-4 h-4" />
-                Webinars
-              </span>
-            </nav>
-          </div>
-          <div className="flex items-center gap-4">
-            <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
-          </div>
-        </div>
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6">
+        <div className="h-6 w-32 animate-pulse rounded bg-slate-200" />
+        <div className="h-8 w-8 animate-pulse rounded-full bg-slate-200" />
       </header>
     )
   }
 
-  // Se não tem sessão após carregar, não mostra header (vai redirecionar para login)
-  if (!session) {
-    return null
-  }
-
-  // Mostra header completo com sessão carregada
   return (
-    <header className="bg-white border-b border-slate-200">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <h1 className="text-xl font-semibold text-slate-900">
-            Sistema Webinar
-          </h1>
-          <nav className="flex items-center gap-4">
-            <Link
-              href="/admin"
-              className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              Dashboard
-            </Link>
-            <Link
-              href="/admin/webinars"
-              className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
-            >
-              <Video className="w-4 h-4" />
-              Webinars
-            </Link>
-          </nav>
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6">
+      {/* Page Title */}
+      <div>
+        <h1 className="text-xl font-semibold text-slate-900">{getPageTitle()}</h1>
+      </div>
+
+      {/* Right Side */}
+      <div className="flex items-center gap-4">
+        {/* Search */}
+        <div className="relative hidden md:block">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            placeholder="Buscar..."
+            className="w-64 pl-9 bg-slate-50 border-slate-200 focus:bg-white"
+          />
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-500">
-            {session.user?.email}
+
+        {/* Notifications */}
+        <Button variant="ghost" size="icon" className="relative">
+          <Bell className="h-5 w-5 text-slate-600" />
+          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
+            3
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => signOut({ callbackUrl: "/admin/login" })}
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
-        </div>
+        </Button>
+
+        {/* User Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100">
+                <span className="text-sm font-medium text-indigo-600">
+                  {session?.user?.email?.[0]?.toUpperCase() || "U"}
+                </span>
+              </div>
+              <div className="hidden text-left md:block">
+                <p className="text-sm font-medium text-slate-700">
+                  {session?.user?.name || "Admin"}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {session?.user?.email}
+                </p>
+              </div>
+              <ChevronDown className="h-4 w-4 text-slate-400" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <User className="mr-2 h-4 w-4" />
+              Perfil
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Settings className="mr-2 h-4 w-4" />
+              Configurações
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-red-600"
+              onClick={() => signOut({ callbackUrl: "/admin/login" })}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Sair
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   )
