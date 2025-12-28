@@ -12,8 +12,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { slug, lessonSlug } = await params
 
     const webinar = await prisma.webinar.findUnique({
-      where: { slug },
-      select: { id: true, name: true, slug: true },
+      where: { slug, status: "PUBLISHED" },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        logoUrl: true,
+        offerUrl: true,
+        offerButtonText: true,
+        lessons: {
+          where: { isActive: true },
+          orderBy: { order: "asc" },
+          select: { id: true, slug: true, title: true, order: true },
+        },
+      },
     })
 
     if (!webinar) {
@@ -22,8 +34,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const lesson = await prisma.lesson.findFirst({
       where: {
-        slug: lessonSlug,
         webinarId: webinar.id,
+        slug: lessonSlug,
+        isActive: true,
       },
       select: {
         id: true,
@@ -31,13 +44,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         slug: true,
         description: true,
         videoUrl: true,
-        duration: true,
+        videoDuration: true,
+        offerShowAt: true,
         order: true,
-        offerTime: true,
-        offerTitle: true,
-        offerDescription: true,
-        offerButtonText: true,
-        offerButtonUrl: true,
       },
     })
 
@@ -45,34 +54,30 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Aula não encontrada" }, { status: 404 })
     }
 
-    // Get next and previous lessons
-    const [prevLesson, nextLesson] = await Promise.all([
-      prisma.lesson.findFirst({
-        where: {
-          webinarId: webinar.id,
-          order: { lt: lesson.order },
-        },
-        orderBy: { order: "desc" },
-        select: { slug: true, title: true },
-      }),
-      prisma.lesson.findFirst({
-        where: {
-          webinarId: webinar.id,
-          order: { gt: lesson.order },
-        },
-        orderBy: { order: "asc" },
-        select: { slug: true, title: true },
-      }),
-    ])
+    const currentIndex = webinar.lessons.findIndex((l: { id: string }) => l.id === lesson.id)
+    const prevLesson = currentIndex > 0 ? webinar.lessons[currentIndex - 1] : null
+    const nextLesson =
+      currentIndex < webinar.lessons.length - 1 ? webinar.lessons[currentIndex + 1] : null
 
     return NextResponse.json({
-      lesson,
-      webinar,
-      prevLesson,
-      nextLesson,
+      id: lesson.id,
+      title: lesson.title,
+      description: lesson.description,
+      videoUrl: lesson.videoUrl,
+      videoDuration: lesson.videoDuration,
+      offerShowAt: lesson.offerShowAt,
+      webinar: {
+        name: webinar.name,
+        slug: webinar.slug,
+        logoUrl: webinar.logoUrl,
+        offerUrl: webinar.offerUrl,
+        offerButtonText: webinar.offerButtonText,
+      },
+      prevLesson: prevLesson ? { slug: prevLesson.slug, title: prevLesson.title } : null,
+      nextLesson: nextLesson ? { slug: nextLesson.slug, title: nextLesson.title } : null,
     })
   } catch (error) {
-    console.error("[Lesson API] Error:", error)
+    console.error("Lesson API error:", error)
     return NextResponse.json({ error: "Erro interno" }, { status: 500 })
   }
 }

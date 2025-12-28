@@ -9,22 +9,18 @@ import { WebinarHeader } from "@/components/webinar/webinar-header"
 import { Button } from "@/components/ui/button"
 
 interface LessonData {
-  lesson: {
-    id: string
-    title: string
-    description: string | null
-    videoUrl: string
-    duration: number | null
-    order: number
-    offerTime: number | null
-    offerTitle: string | null
-    offerDescription: string | null
-    offerButtonText: string | null
-    offerButtonUrl: string | null
-  }
+  id: string
+  title: string
+  description: string | null
+  videoUrl: string
+  videoDuration: number | null
+  offerShowAt: number | null
   webinar: {
     name: string
     slug: string
+    logoUrl: string | null
+    offerUrl: string | null
+    offerButtonText: string | null
   }
   nextLesson: {
     slug: string
@@ -84,7 +80,7 @@ export default function LessonPlayerPage() {
     )
   }
 
-  const videoId = extractYouTubeId(data.lesson.videoUrl)
+  const videoId = extractYouTubeId(data.videoUrl)
 
   return (
     <div className="min-h-screen bg-slate-950">
@@ -104,7 +100,7 @@ export default function LessonPlayerPage() {
             {videoId ? (
               <YouTubePlayer
                 videoId={videoId}
-                offerTime={data.lesson.offerTime}
+                offerTime={data.offerShowAt}
                 onOfferTrigger={() => setShowOffer(true)}
               />
             ) : (
@@ -114,14 +110,9 @@ export default function LessonPlayerPage() {
             )}
 
             <div className="mt-6">
-              <div className="flex items-center gap-2 text-sm text-indigo-400">
-                Aula {data.lesson.order}
-              </div>
-              <h1 className="mt-2 text-2xl font-bold text-white">
-                {data.lesson.title}
-              </h1>
-              {data.lesson.description && (
-                <p className="mt-4 text-slate-400">{data.lesson.description}</p>
+              <h1 className="text-2xl font-bold text-white">{data.title}</h1>
+              {data.description && (
+                <p className="mt-4 text-slate-400">{data.description}</p>
               )}
             </div>
 
@@ -145,31 +136,27 @@ export default function LessonPlayerPage() {
           </div>
 
           <div className="lg:col-span-1">
-            {/* Offer card - shows when triggered */}
-            {(showOffer || !data.lesson.offerTime) && data.lesson.offerTitle && (
+            {/* Offer card - shows when triggered or if no offerShowAt time */}
+            {(showOffer || !data.offerShowAt) && data.webinar.offerUrl && (
               <div className="sticky top-24 rounded-xl border border-indigo-500/30 bg-gradient-to-br from-indigo-900/50 to-slate-900 p-6 animate-in fade-in slide-in-from-right-4">
                 <div className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">
                   Oferta Especial
                 </div>
                 <h3 className="mt-2 text-xl font-bold text-white">
-                  {data.lesson.offerTitle}
+                  Aproveite esta oportunidade!
                 </h3>
-                {data.lesson.offerDescription && (
-                  <p className="mt-2 text-sm text-slate-300">
-                    {data.lesson.offerDescription}
-                  </p>
-                )}
-                {data.lesson.offerButtonUrl && (
-                  <a
-                    href={data.lesson.offerButtonUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-500 transition-colors"
-                  >
-                    {data.lesson.offerButtonText || "Quero aproveitar"}
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                )}
+                <p className="mt-2 text-sm text-slate-300">
+                  Clique no botão abaixo para acessar a oferta exclusiva.
+                </p>
+                <a
+                  href={data.webinar.offerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-500 transition-colors"
+                >
+                  {data.webinar.offerButtonText || "Quero aproveitar"}
+                  <ExternalLink className="h-4 w-4" />
+                </a>
               </div>
             )}
           </div>
