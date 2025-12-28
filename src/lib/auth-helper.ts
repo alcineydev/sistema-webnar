@@ -1,5 +1,5 @@
 import { cookies } from "next/headers"
-import { decode } from "next-auth/jwt"
+import { jwtVerify } from "jose"
 
 export async function getServerSession() {
   const cookieStore = await cookies()
@@ -14,21 +14,21 @@ export async function getServerSession() {
   }
 
   try {
-    const decoded = await decode({
-      token: sessionToken,
-      secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "",
-    })
+    const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || ""
+    const encodedSecret = new TextEncoder().encode(secret)
 
-    if (!decoded) {
+    const { payload } = await jwtVerify(sessionToken, encodedSecret)
+
+    if (!payload) {
       return null
     }
 
     return {
       user: {
-        id: decoded.id as string,
-        email: decoded.email as string,
-        name: decoded.name as string,
-        role: decoded.role as string,
+        id: payload.id as string,
+        email: payload.email as string,
+        name: payload.name as string,
+        role: payload.role as string,
       }
     }
   } catch (error) {
