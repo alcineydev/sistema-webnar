@@ -1,32 +1,37 @@
 import { NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
+import { getToken } from "next-auth/jwt"
 import { prisma } from "@/lib/prisma"
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const session = await auth()
+    const token = await getToken({
+      req: request as any,
+      secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+    })
 
-    if (!session?.user?.id) {
+    if (!token?.id) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
+    const userId = token.id as string
+
     const [webinarCount, leadCount, todayLeads, webinars, convertedLeads] = await Promise.all([
-      prisma.webinar.count({ where: { createdById: session.user.id } }),
-      prisma.lead.count({ where: { webinar: { createdById: session.user.id } } }),
+      prisma.webinar.count({ where: { createdById: userId } }),
+      prisma.lead.count({ where: { webinar: { createdById: userId } } }),
       prisma.lead.count({
         where: {
-          webinar: { createdById: session.user.id },
+          webinar: { createdById: userId },
           createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
         }
       }),
       prisma.webinar.findMany({
-        where: { createdById: session.user.id },
+        where: { createdById: userId },
         take: 5,
         orderBy: { createdAt: "desc" },
         include: { _count: { select: { leads: true, lessons: true } } }
       }),
       prisma.lead.count({
-        where: { webinar: { createdById: session.user.id }, status: "CONVERTED" }
+        where: { webinar: { createdById: userId }, status: "CONVERTED" }
       })
     ])
 
@@ -34,13 +39,7 @@ export async function GET() {
       ? `${(convertedLeads / leadCount * 100).toFixed(1)}%`
       : "0%"
 
-    return NextResponse.json({
-      webinarCount,
-      leadCount,
-      todayLeads,
-      conversionRate,
-      webinars
-    })
+    return NextResponse.json({ webinarCount, leadCount, todayLeads, conversionRate, webinars })
   } catch (error) {
     console.error("Dashboard API error:", error)
     return NextResponse.json({ error: "Erro interno" }, { status: 500 })

@@ -40,6 +40,7 @@ export function DashboardContent() {
       fetch("/api/admin/dashboard")
         .then(res => res.json())
         .then(setData)
+        .catch(console.error)
         .finally(() => setLoading(false))
     }
   }, [status])
