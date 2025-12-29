@@ -5,7 +5,7 @@ import { useParams } from "next/navigation"
 import { WebinarHeader } from "@/components/webinar/webinar-header"
 import { YouTubePlayer } from "@/components/webinar/youtube-player"
 import { Button } from "@/components/ui/button"
-import { Gift, Loader2, Play, Lock, ChevronRight } from "lucide-react"
+import { Gift, Loader2, Play, Lock } from "lucide-react"
 import Link from "next/link"
 
 interface Lesson {
@@ -139,11 +139,11 @@ export default function LessonPage() {
 
           {/* Lista de aulas (sidebar) */}
           <div className="lg:w-80 flex-shrink-0">
-            <div className="bg-zinc-900 rounded-xl p-4 sticky top-24">
-              <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">
+            <div className="bg-zinc-900 rounded-xl overflow-hidden sticky top-24">
+              <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide p-4 border-b border-zinc-800">
                 Aulas do curso
               </h2>
-              <div className="space-y-2">
+              <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
                 {lesson.allLessons.map((item, index) => {
                   const isCurrent = item.slug === params.lessonSlug
                   const isLocked = item.isLocked
@@ -152,10 +152,23 @@ export default function LessonPage() {
                     return (
                       <div
                         key={item.id}
-                        className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50 opacity-50"
+                        className="flex items-center gap-3 p-3 border-b border-zinc-800/50 opacity-50"
                       >
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-700">
-                          <Lock className="h-4 w-4 text-zinc-500" />
+                        <div className="relative w-28 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-800">
+                          {item.thumbnailUrl ? (
+                            <img
+                              src={item.thumbnailUrl}
+                              alt={item.title}
+                              className="w-full h-full object-cover grayscale"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Lock className="h-5 w-5 text-zinc-600" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <Lock className="h-5 w-5 text-zinc-400" />
+                          </div>
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-zinc-500 truncate">{item.title}</p>
@@ -169,30 +182,42 @@ export default function LessonPage() {
                     <Link
                       key={item.id}
                       href={`/w/${lesson.webinar.slug}/aula/${item.slug}`}
-                      className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                      className={`flex items-center gap-3 p-3 border-b border-zinc-800/50 transition-colors ${
                         isCurrent
-                          ? "bg-indigo-600 text-white"
-                          : "bg-zinc-800/50 hover:bg-zinc-800 text-zinc-300"
+                          ? "bg-indigo-600/20"
+                          : "hover:bg-zinc-800/50"
                       }`}
                     >
-                      <div
-                        className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                          isCurrent ? "bg-white/20" : "bg-zinc-700"
-                        }`}
-                      >
-                        {isCurrent ? (
-                          <Play className="h-4 w-4 ml-0.5" />
+                      <div className="relative w-28 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-800">
+                        {item.thumbnailUrl ? (
+                          <img
+                            src={item.thumbnailUrl}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
-                          <span className="text-sm font-medium">{index + 1}</span>
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Play className="h-5 w-5 text-zinc-500" />
+                          </div>
+                        )}
+                        {isCurrent && (
+                          <div className="absolute inset-0 bg-indigo-600/30 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
+                              <Play className="h-4 w-4 text-indigo-600 ml-0.5" />
+                            </div>
+                          </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.title}</p>
-                        <p className={`text-xs ${isCurrent ? "text-white/70" : "text-zinc-500"}`}>
+                        <p className={`text-sm font-medium truncate ${
+                          isCurrent ? "text-indigo-400" : "text-zinc-300"
+                        }`}>
+                          {item.title}
+                        </p>
+                        <p className={`text-xs ${isCurrent ? "text-indigo-400/70" : "text-zinc-500"}`}>
                           Aula {index + 1}
                         </p>
                       </div>
-                      {isCurrent && <ChevronRight className="h-4 w-4" />}
                     </Link>
                   )
                 })}
