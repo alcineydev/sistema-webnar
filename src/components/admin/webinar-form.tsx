@@ -25,9 +25,6 @@ interface Webinar {
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED"
   releaseType: "IMMEDIATE" | "SCHEDULED" | "SEQUENTIAL"
   primaryColor?: string | null
-  offerUrl?: string | null
-  offerButtonText?: string | null
-  urgencyMessage?: string | null
 }
 
 interface WebinarFormProps {
@@ -148,44 +145,6 @@ export function WebinarForm({ webinar }: WebinarFormProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Oferta</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="offerUrl">URL da Oferta</Label>
-              <Input
-                id="offerUrl"
-                name="offerUrl"
-                type="url"
-                defaultValue={webinar?.offerUrl || ""}
-                placeholder="https://seusite.com/checkout"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="offerButtonText">Texto do Botão</Label>
-              <Input
-                id="offerButtonText"
-                name="offerButtonText"
-                defaultValue={webinar?.offerButtonText || "Quero Aproveitar"}
-                placeholder="Quero Aproveitar"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="urgencyMessage">Mensagem de Urgência</Label>
-              <Input
-                id="urgencyMessage"
-                name="urgencyMessage"
-                defaultValue={webinar?.urgencyMessage || ""}
-                placeholder="Ex: Oferta válida até amanhã!"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
             <CardTitle>Aparência</CardTitle>
           </CardHeader>
           <CardContent>
@@ -212,6 +171,13 @@ export function WebinarForm({ webinar }: WebinarFormProps) {
             </div>
           </CardContent>
         </Card>
+
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <p className="text-sm text-amber-800">
+            💡 <strong>Dica:</strong> As ofertas agora são configuradas individualmente em cada aula.
+            Acesse a aba "Aulas" para configurar ofertas específicas por aula.
+          </p>
+        </div>
 
         <div className="flex gap-4">
           <Button

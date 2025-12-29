@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useParams } from "next/navigation"
 import { WebinarHeader } from "@/components/webinar/webinar-header"
 import { YouTubePlayer } from "@/components/webinar/youtube-player"
@@ -23,10 +23,11 @@ interface LessonData {
   description: string | null
   videoUrl: string
   videoDuration: number | null
-  offerUrl: string | null         // Da aula
-  offerButtonText: string | null  // Da aula
-  offerShowAt: number | null      // Da aula
+  offerUrl: string | null
+  offerButtonText: string | null
+  offerShowAt: number | null
   webinar: {
+    id: string
     name: string
     slug: string
     logoUrl: string | null
@@ -47,6 +48,7 @@ export default function LessonPage() {
   const [lead, setLead] = useState<Lead | null>(null)
   const [loading, setLoading] = useState(true)
   const [showOffer, setShowOffer] = useState(false)
+  const lastTrackedTime = useRef(0)
 
   useEffect(() => {
     fetch(`/api/webinar/${params.slug}/aula/${params.lessonSlug}`)
@@ -74,6 +76,51 @@ export default function LessonPage() {
         }
       })
   }, [lesson, params.slug])
+
+  // Função de tracking de progresso
+  const handleTimeUpdate = useCallback(async (currentTime: number, duration: number) => {
+    if (!lesson || !lead) return
+
+    // Só tracka a cada 10 segundos
+    if (currentTime - lastTrackedTime.current < 10) return
+    lastTrackedTime.current = currentTime
+
+    const percentWatched = duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0
+
+    try {
+      await fetch("/api/lead/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lessonId: lesson.id,
+          webinarId: lesson.webinar.id,
+          watchedSeconds: Math.floor(currentTime),
+          percentWatched: Math.floor(percentWatched)
+        })
+      })
+    } catch (error) {
+      console.error("[Tracking] Error:", error)
+    }
+  }, [lesson, lead])
+
+  // Registrar evento de clique na oferta
+  const handleOfferClick = useCallback(async () => {
+    if (!lesson || !lead) return
+
+    try {
+      await fetch("/api/lead/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lessonId: lesson.id,
+          webinarId: lesson.webinar.id,
+          eventType: "OFFER_CLICKED"
+        })
+      })
+    } catch (error) {
+      console.error("[Offer Click] Error:", error)
+    }
+  }, [lesson, lead])
 
   if (loading) {
     return (
@@ -114,6 +161,7 @@ export default function LessonPage() {
                 videoUrl={lesson.videoUrl}
                 offerShowAt={lesson.offerShowAt}
                 onOfferShow={() => setShowOffer(true)}
+                onTimeUpdate={handleTimeUpdate}
               />
             </div>
 
@@ -130,7 +178,12 @@ export default function LessonPage() {
                       <p className="text-white/80 text-sm">Aproveite esta oportunidade exclusiva</p>
                     </div>
                   </div>
-                  <a href={lesson.offerUrl} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={lesson.offerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={handleOfferClick}
+                  >
                     <Button size="lg" className="bg-white text-indigo-600 hover:bg-zinc-100">
                       {lesson.offerButtonText || "Quero Aproveitar"}
                     </Button>

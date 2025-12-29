@@ -5,8 +5,10 @@ import { Play, Pause, Volume2, VolumeX, Maximize } from "lucide-react"
 
 interface YouTubePlayerProps {
   videoUrl: string
-  onTimeUpdate?: (currentTime: number) => void
+  onTimeUpdate?: (currentTime: number, duration: number) => void
   onEnded?: () => void
+  onPlay?: () => void
+  onPause?: () => void
   offerShowAt?: number | null
   onOfferShow?: () => void
 }
@@ -74,6 +76,8 @@ export function YouTubePlayer({
   videoUrl,
   onTimeUpdate,
   onEnded,
+  onPlay,
+  onPause,
   offerShowAt,
   onOfferShow
 }: YouTubePlayerProps) {
@@ -159,8 +163,10 @@ export function YouTubePlayer({
         onStateChange: (event: YTPlayerEvent) => {
           if (event.data === window.YT.PlayerState.PLAYING) {
             setIsPlaying(true)
+            onPlay?.()
           } else if (event.data === window.YT.PlayerState.PAUSED) {
             setIsPlaying(false)
+            onPause?.()
           } else if (event.data === window.YT.PlayerState.ENDED) {
             setIsPlaying(false)
             onEnded?.()
@@ -184,8 +190,9 @@ export function YouTubePlayer({
     const interval = setInterval(() => {
       if (playerRef.current && playerRef.current.getCurrentTime) {
         const time = playerRef.current.getCurrentTime()
+        const dur = playerRef.current.getDuration() || duration
         setCurrentTime(time)
-        onTimeUpdate?.(time)
+        onTimeUpdate?.(time, dur)
 
         if (offerShowAt && time >= offerShowAt && !offerShown) {
           setOfferShown(true)

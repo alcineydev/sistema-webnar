@@ -1,9 +1,17 @@
 "use server"
 
+import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { getServerSession } from "@/lib/auth-helper"
-import { prisma } from "@/lib/prisma"
-import { createLessonSchema, updateLessonSchema } from "@/lib/validations/webinar"
+
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+}
 
 export async function getLessonsByWebinarId(webinarId: string) {
   const session = await getServerSession()
@@ -25,97 +33,127 @@ export async function getLessonById(id: string) {
   })
 }
 
-export async function createLesson(webinarId: string, data: FormData) {
+export async function createLesson(webinarId: string, formData: FormData) {
   const session = await getServerSession()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
-  const webinar = await prisma.webinar.findFirst({
-    where: { id: webinarId, createdById: session.user.id }
-  })
+  try {
+    const title = formData.get("title") as string
+    const slug = (formData.get("slug") as string) || generateSlug(title)
+    const description = formData.get("description") as string || null
+    const videoUrl = formData.get("videoUrl") as string
+    const videoDuration = formData.get("videoDuration") ? parseInt(formData.get("videoDuration") as string) : null
+    const thumbnailUrl = formData.get("thumbnailUrl") as string || null
+    const isActive = formData.get("isActive") === "true"
+    const releaseAt = formData.get("releaseAt") ? new Date(formData.get("releaseAt") as string) : null
 
-  if (!webinar) throw new Error("Webinar não encontrado")
+    // Campos de oferta
+    const offerUrlRaw = formData.get("offerUrl") as string
+    const offerUrl = offerUrlRaw && offerUrlRaw.trim() !== "" ? offerUrlRaw.trim() : null
+    const offerButtonTextRaw = formData.get("offerButtonText") as string
+    const offerButtonText = offerButtonTextRaw && offerButtonTextRaw.trim() !== "" ? offerButtonTextRaw.trim() : null
+    const offerShowAtRaw = formData.get("offerShowAt") as string
+    const offerShowAt = offerShowAtRaw && offerShowAtRaw.trim() !== "" ? parseInt(offerShowAtRaw) : null
 
-  const lastLesson = await prisma.lesson.findFirst({
-    where: { webinarId },
-    orderBy: { order: "desc" }
-  })
+    // Pegar a ordem da última aula
+    const lastLesson = await prisma.lesson.findFirst({
+      where: { webinarId },
+      orderBy: { order: "desc" }
+    })
+    const order = lastLesson ? lastLesson.order + 1 : 0
 
-  const formData = {
-    title: data.get("title") as string,
-    slug: data.get("slug") as string,
-    description: data.get("description") as string || undefined,
-    videoUrl: data.get("videoUrl") as string,
-    thumbnailUrl: data.get("thumbnailUrl") as string || undefined,
-    order: lastLesson ? lastLesson.order + 1 : 0,
-    isActive: data.get("isActive") === "true",
-    releaseAt: data.get("releaseAt") ? new Date(data.get("releaseAt") as string) : null,
-    offerUrl: data.get("offerUrl") as string || null,
-    offerButtonText: data.get("offerButtonText") as string || null,
-    offerShowAt: data.get("offerShowAt") ? parseInt(data.get("offerShowAt") as string) : null,
+    console.log("[createLesson] Dados:", { title, offerUrl, offerButtonText, offerShowAt })
+
+    const lesson = await prisma.lesson.create({
+      data: {
+        title,
+        slug,
+        description,
+        videoUrl,
+        videoDuration,
+        thumbnailUrl,
+        order,
+        isActive,
+        releaseAt,
+        offerUrl,
+        offerButtonText,
+        offerShowAt,
+        webinarId
+      }
+    })
+
+    revalidatePath(`/admin/webinars/${webinarId}/aulas`)
+    return { success: true, lesson }
+  } catch (error) {
+    console.error("[createLesson] Error:", error)
+    return { error: "Erro ao criar aula" }
   }
-
-  const validated = createLessonSchema.parse(formData)
-
-  const existingSlug = await prisma.lesson.findFirst({
-    where: { webinarId, slug: validated.slug }
-  })
-
-  if (existingSlug) {
-    throw new Error("Este slug já está em uso neste webinar")
-  }
-
-  await prisma.lesson.create({
-    data: {
-      ...validated,
-      webinarId
-    }
-  })
-
-  revalidatePath(`/admin/webinars/${webinarId}`)
 }
 
-export async function updateLesson(id: string, webinarId: string, data: FormData) {
+export async function updateLesson(lessonId: string, webinarId: string, formData: FormData) {
   const session = await getServerSession()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
-  const formData = {
-    title: data.get("title") as string,
-    slug: data.get("slug") as string,
-    description: data.get("description") as string || undefined,
-    videoUrl: data.get("videoUrl") as string,
-    thumbnailUrl: data.get("thumbnailUrl") as string || undefined,
-    isActive: data.get("isActive") === "true",
-    releaseAt: data.get("releaseAt") ? new Date(data.get("releaseAt") as string) : null,
-    offerUrl: data.get("offerUrl") as string || null,
-    offerButtonText: data.get("offerButtonText") as string || null,
-    offerShowAt: data.get("offerShowAt") ? parseInt(data.get("offerShowAt") as string) : null,
+  try {
+    const title = formData.get("title") as string
+    const slug = formData.get("slug") as string
+    const description = formData.get("description") as string || null
+    const videoUrl = formData.get("videoUrl") as string
+    const videoDuration = formData.get("videoDuration") ? parseInt(formData.get("videoDuration") as string) : null
+    const thumbnailUrl = formData.get("thumbnailUrl") as string || null
+    const isActive = formData.get("isActive") === "true"
+    const releaseAt = formData.get("releaseAt") ? new Date(formData.get("releaseAt") as string) : null
+
+    // Campos de oferta - tratar strings vazias como null
+    const offerUrlRaw = formData.get("offerUrl") as string
+    const offerUrl = offerUrlRaw && offerUrlRaw.trim() !== "" ? offerUrlRaw.trim() : null
+    const offerButtonTextRaw = formData.get("offerButtonText") as string
+    const offerButtonText = offerButtonTextRaw && offerButtonTextRaw.trim() !== "" ? offerButtonTextRaw.trim() : null
+    const offerShowAtRaw = formData.get("offerShowAt") as string
+    const offerShowAt = offerShowAtRaw && offerShowAtRaw.trim() !== "" ? parseInt(offerShowAtRaw) : null
+
+    console.log("[updateLesson] Dados de oferta:", { offerUrl, offerButtonText, offerShowAt })
+
+    const lesson = await prisma.lesson.update({
+      where: { id: lessonId },
+      data: {
+        title,
+        slug,
+        description,
+        videoUrl,
+        videoDuration,
+        thumbnailUrl,
+        isActive,
+        releaseAt,
+        offerUrl,
+        offerButtonText,
+        offerShowAt
+      }
+    })
+
+    revalidatePath(`/admin/webinars/${webinarId}/aulas`)
+    return { success: true, lesson }
+  } catch (error) {
+    console.error("[updateLesson] Error:", error)
+    return { error: "Erro ao atualizar aula" }
   }
-
-  const validated = updateLessonSchema.parse(formData)
-
-  const existingSlug = await prisma.lesson.findFirst({
-    where: { webinarId, slug: validated.slug, id: { not: id } }
-  })
-
-  if (existingSlug) {
-    throw new Error("Este slug já está em uso neste webinar")
-  }
-
-  await prisma.lesson.update({
-    where: { id },
-    data: validated
-  })
-
-  revalidatePath(`/admin/webinars/${webinarId}`)
 }
 
-export async function deleteLesson(id: string, webinarId: string) {
+export async function deleteLesson(lessonId: string, webinarId: string) {
   const session = await getServerSession()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
-  await prisma.lesson.delete({ where: { id } })
+  try {
+    await prisma.lesson.delete({
+      where: { id: lessonId }
+    })
 
-  revalidatePath(`/admin/webinars/${webinarId}`)
+    revalidatePath(`/admin/webinars/${webinarId}/aulas`)
+    return { success: true }
+  } catch (error) {
+    console.error("[deleteLesson] Error:", error)
+    return { error: "Erro ao excluir aula" }
+  }
 }
 
 export async function reorderLessons(webinarId: string, lessonIds: string[]) {
@@ -131,5 +169,5 @@ export async function reorderLessons(webinarId: string, lessonIds: string[]) {
     )
   )
 
-  revalidatePath(`/admin/webinars/${webinarId}`)
+  revalidatePath(`/admin/webinars/${webinarId}/aulas`)
 }
