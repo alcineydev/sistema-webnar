@@ -257,6 +257,7 @@ export default function LessonPage() {
     <div className="min-h-screen bg-black">
       <WebinarHeader
         webinarName={lesson.webinar.name}
+        webinarSlug={lesson.webinar.slug}
         logoUrl={lesson.webinar.logoUrl}
       />
 
