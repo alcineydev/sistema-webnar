@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { getWebinars } from "@/actions/webinar.actions"
 import { WebinarList } from "@/components/admin/webinar-list"
 
+export const dynamic = "force-dynamic"
+
 export default async function WebinarsPage() {
   const webinars = await getWebinars()
 

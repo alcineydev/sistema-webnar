@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Video, Users, Eye, MousePointer } from "lucide-react"
 import Link from "next/link"
 
+export const dynamic = "force-dynamic"
+
 export default async function AdminDashboard() {
   // Buscar métricas globais
   const [totalWebinars, totalLeads, totalEvents, recentLeads, webinars] = await Promise.all([

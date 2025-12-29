@@ -4,6 +4,8 @@ import { WebinarTabs } from "@/components/admin/webinar-tabs"
 import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
 
+export const dynamic = "force-dynamic"
+
 interface Props {
   children: React.ReactNode
   params: Promise<{ id: string }>

@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma"
 import { Mail, Phone, Eye } from "lucide-react"
 import Link from "next/link"
 
+export const dynamic = "force-dynamic"
+
 export default async function LeadsGlobalPage() {
   const leads = await prisma.lead.findMany({
     orderBy: { createdAt: "desc" },
