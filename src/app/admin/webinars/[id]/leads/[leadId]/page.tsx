@@ -169,7 +169,9 @@ export default async function LeadDetailPage({ params }: Props) {
                       </div>
                     </div>
                     {p.offerClicked && (
-                      <MousePointer className="h-4 w-4 text-green-600" title="Clicou na oferta" />
+                      <span title="Clicou na oferta">
+                        <MousePointer className="h-4 w-4 text-green-600" />
+                      </span>
                     )}
                   </div>
                 ))}
