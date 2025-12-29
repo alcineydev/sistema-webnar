@@ -23,16 +23,19 @@ export default async function WebinarLeadsPage({ params }: Props) {
   const leads = await prisma.lead.findMany({
     where: { webinarId: id },
     orderBy: { createdAt: "desc" },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      totalWatchTime: true,
+      createdAt: true,
       progress: {
         select: {
           lessonId: true,
           percentWatched: true,
           isCompleted: true
         }
-      },
-      _count: {
-        select: { events: true }
       }
     }
   })
@@ -47,7 +50,8 @@ export default async function WebinarLeadsPage({ params }: Props) {
     }).format(new Date(date))
   }
 
-  const formatTime = (seconds: number) => {
+  const formatTime = (seconds: number | null) => {
+    if (!seconds) return "0 min"
     const mins = Math.floor(seconds / 60)
     return `${mins} min`
   }
@@ -82,9 +86,9 @@ export default async function WebinarLeadsPage({ params }: Props) {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {leads.map((lead) => {
-              const completedCount = lead.progress.filter(p => p.isCompleted).length
-              const avgProgress = lead.progress.length > 0
-                ? Math.round(lead.progress.reduce((acc, p) => acc + p.percentWatched, 0) / lead.progress.length)
+              const completedCount = lead.progress?.filter(p => p.isCompleted).length || 0
+              const avgProgress = lead.progress && lead.progress.length > 0
+                ? Math.round(lead.progress.reduce((acc, p) => acc + (p.percentWatched || 0), 0) / lead.progress.length)
                 : 0
 
               return (
