@@ -28,9 +28,23 @@ export async function getWebinarById(id: string) {
   return prisma.webinar.findFirst({
     where: { id, createdById: session.user.id },
     include: {
-      lessons: { orderBy: { order: "asc" } },
-      _count: { select: { leads: true } }
-    }
+      lessons: {
+        orderBy: { order: "asc" },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          videoUrl: true,
+          videoDuration: true,
+          thumbnailUrl: true,
+          releaseAt: true,
+          isActive: true,
+          order: true,
+        },
+      },
+      _count: { select: { leads: true } },
+    },
   })
 }
 

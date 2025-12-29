@@ -10,6 +10,7 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { slug, lessonSlug } = await params
+    console.log("[Lesson API] Buscando aula:", { slug, lessonSlug })
 
     const webinar = await prisma.webinar.findUnique({
       where: { slug, status: "PUBLISHED" },
@@ -36,8 +37,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     })
 
     if (!webinar) {
+      console.log("[Lesson API] Webinar não encontrado:", slug)
       return NextResponse.json({ error: "Webinar não encontrado" }, { status: 404 })
     }
+
+    console.log("[Lesson API] Webinar encontrado:", { id: webinar.id, name: webinar.name, totalLessons: webinar.lessons.length })
 
     const lesson = await prisma.lesson.findFirst({
       where: {
@@ -58,7 +62,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     })
 
     if (!lesson) {
+      console.log("[Lesson API] Aula não encontrada:", lessonSlug)
       return NextResponse.json({ error: "Aula não encontrada" }, { status: 404 })
+    }
+
+    console.log("[Lesson API] Aula encontrada:", {
+      id: lesson.id,
+      title: lesson.title,
+      videoUrl: lesson.videoUrl,
+      videoDuration: lesson.videoDuration
+    })
+
+    // Verificar se a aula está bloqueada por data de liberação
+    const lessonInfo = webinar.lessons.find((l: { id: string }) => l.id === lesson.id)
+    if (lessonInfo?.releaseAt && new Date(lessonInfo.releaseAt) > new Date()) {
+      console.log("[Lesson API] Aula bloqueada por data:", { releaseAt: lessonInfo.releaseAt })
+      return NextResponse.json({ error: "Esta aula ainda não está disponível" }, { status: 403 })
     }
 
     const currentIndex = webinar.lessons.findIndex((l: { id: string }) => l.id === lesson.id)
