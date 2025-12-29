@@ -3,6 +3,7 @@
 import { useState, useRef } from "react"
 import { X, Loader2, Image as ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { createClient } from "@supabase/supabase-js"
 
 interface ImageUploadProps {
   value?: string | null
@@ -10,43 +11,72 @@ interface ImageUploadProps {
   folder?: string
 }
 
+// Cliente Supabase no lado do cliente
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
 export function ImageUpload({ value, onChange, folder = "thumbnails" }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState<string | null>(value || null)
+  const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
+    setError(null)
+
+    // Validar tipo
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+    if (!allowedTypes.includes(file.type)) {
+      setError("Tipo de arquivo não permitido. Use PNG, JPG, GIF ou WebP.")
+      return
+    }
+
+    // Validar tamanho (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Arquivo muito grande. Máximo 5MB.")
+      return
+    }
+
     // Preview local
     const reader = new FileReader()
     reader.onload = (e) => setPreview(e.target?.result as string)
     reader.readAsDataURL(file)
 
-    // Upload
+    // Upload direto para Supabase
     setUploading(true)
     try {
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("folder", folder)
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      })
+      const { data, error: uploadError } = await supabase.storage
+        .from("webinar-assets")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: true,
+        })
 
-      const data = await response.json()
-
-      if (data.url) {
-        onChange(data.url)
-        setPreview(data.url)
-      } else {
-        console.error("Upload failed:", data.error)
+      if (uploadError) {
+        console.error("Upload error:", uploadError)
+        setError(`Erro no upload: ${uploadError.message}`)
         setPreview(value || null)
+        return
       }
-    } catch (error) {
-      console.error("Upload error:", error)
+
+      // Gerar URL pública
+      const { data: urlData } = supabase.storage
+        .from("webinar-assets")
+        .getPublicUrl(data.path)
+
+      onChange(urlData.publicUrl)
+      setPreview(urlData.publicUrl)
+    } catch (err) {
+      console.error("Upload error:", err)
+      setError("Erro ao fazer upload. Tente novamente.")
       setPreview(value || null)
     } finally {
       setUploading(false)
@@ -55,6 +85,7 @@ export function ImageUpload({ value, onChange, folder = "thumbnails" }: ImageUpl
 
   const handleRemove = () => {
     setPreview(null)
+    setError(null)
     onChange(null)
     if (inputRef.current) {
       inputRef.current.value = ""
@@ -71,6 +102,12 @@ export function ImageUpload({ value, onChange, folder = "thumbnails" }: ImageUpl
         className="hidden"
         id="thumbnail-upload"
       />
+
+      {error && (
+        <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+          {error}
+        </div>
+      )}
 
       {preview ? (
         <div className="relative w-full max-w-md aspect-video rounded-lg overflow-hidden border border-slate-200">
