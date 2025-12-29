@@ -1,11 +1,19 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef } from "react"
-import { useParams } from "next/navigation"
-import { WebinarHeader } from "@/components/webinar/webinar-header"
+import { useParams, useRouter } from "next/navigation"
 import { YouTubePlayer } from "@/components/webinar/youtube-player"
+import { WebinarHeader } from "@/components/webinar/webinar-header"
+import { LeadAuth } from "@/components/webinar/lead-auth"
 import { Button } from "@/components/ui/button"
-import { Gift, Loader2, Play, Lock } from "lucide-react"
+import {
+  Loader2,
+  Play,
+  Lock,
+  CheckCircle,
+  Gift,
+  Video
+} from "lucide-react"
 import Link from "next/link"
 
 interface Lesson {
@@ -15,6 +23,12 @@ interface Lesson {
   order: number
   thumbnailUrl: string | null
   isLocked: boolean
+}
+
+interface Lead {
+  id: string
+  email: string
+  name: string
 }
 
 interface LessonData {
@@ -30,81 +44,85 @@ interface LessonData {
     id: string
     name: string
     slug: string
+    description: string | null
     logoUrl: string | null
   }
   allLessons: Lesson[]
-  currentIndex: number
-}
-
-interface Lead {
-  id: string
-  email: string
-  name: string
 }
 
 export default function LessonPage() {
   const params = useParams()
+  const router = useRouter()
+  const slug = params.slug as string
+  const lessonSlug = params.lessonSlug as string
+
   const [lesson, setLesson] = useState<LessonData | null>(null)
   const [lead, setLead] = useState<Lead | null>(null)
   const [loading, setLoading] = useState(true)
+  const [checkingLead, setCheckingLead] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [showOffer, setShowOffer] = useState(false)
-  const lastTrackedTime = useRef(0)
+  const [offerShownTracked, setOfferShownTracked] = useState(false)
 
+  // Tracking refs
+  const lastTrackedTimeRef = useRef(0)
+  const trackedMilestonesRef = useRef<Set<number>>(new Set())
+
+  // Buscar dados da aula
   useEffect(() => {
-    fetch(`/api/webinar/${params.slug}/aula/${params.lessonSlug}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!data.error) {
-          setLesson(data)
-        }
-      })
-      .finally(() => setLoading(false))
-  }, [params.slug, params.lessonSlug])
+    async function fetchLesson() {
+      try {
+        const response = await fetch(`/api/webinar/${slug}/aula/${lessonSlug}`)
+        const data = await response.json()
 
-  // Buscar lead logado
+        if (!response.ok) {
+          setError(data.error || "Erro ao carregar aula")
+          return
+        }
+
+        setLesson(data)
+      } catch (err) {
+        setError("Erro ao carregar aula")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchLesson()
+  }, [slug, lessonSlug])
+
+  // Verificar se lead está logado
   useEffect(() => {
     if (!lesson) return
 
-    fetch(`/api/lead/me?webinarSlug=${params.slug}`)
-      .then(res => res.json())
-      .then(data => {
+    async function checkLead() {
+      try {
+        const response = await fetch(`/api/lead/me?webinarSlug=${slug}`)
+        const data = await response.json()
+
         if (data.lead) {
           setLead(data.lead)
-        } else {
-          // Se não está logado, redirecionar para página de entrada
-          window.location.href = `/w/${params.slug}`
         }
-      })
-  }, [lesson, params.slug])
-
-  // Função de tracking de progresso
-  const handleTimeUpdate = useCallback(async (currentTime: number, duration: number) => {
-    if (!lesson || !lead) return
-
-    // Só tracka a cada 10 segundos
-    if (currentTime - lastTrackedTime.current < 10) return
-    lastTrackedTime.current = currentTime
-
-    const percentWatched = duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0
-
-    try {
-      await fetch("/api/lead/progress", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lessonId: lesson.id,
-          webinarId: lesson.webinar.id,
-          watchedSeconds: Math.floor(currentTime),
-          percentWatched: Math.floor(percentWatched)
-        })
-      })
-    } catch (error) {
-      console.error("[Tracking] Error:", error)
+      } catch (err) {
+        console.error("Error checking lead:", err)
+      } finally {
+        setCheckingLead(false)
+      }
     }
-  }, [lesson, lead])
 
-  // Registrar evento de clique na oferta
-  const handleOfferClick = useCallback(async () => {
+    checkLead()
+  }, [lesson, slug])
+
+  // Reset tracking quando muda de aula
+  useEffect(() => {
+    lastTrackedTimeRef.current = 0
+    trackedMilestonesRef.current = new Set()
+    setShowOffer(false)
+    setOfferShownTracked(false)
+  }, [lessonSlug])
+
+  // Função para registrar evento
+  const trackEvent = useCallback(async (eventType: string, videoTime?: number, data?: Record<string, unknown>) => {
     if (!lesson || !lead) return
 
     try {
@@ -112,46 +130,146 @@ export default function LessonPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          eventType,
           lessonId: lesson.id,
           webinarId: lesson.webinar.id,
-          eventType: "OFFER_CLICKED"
+          videoTime,
+          data
         })
       })
+      console.log("[Tracking] Event sent:", eventType)
     } catch (error) {
-      console.error("[Offer Click] Error:", error)
+      console.error("[Tracking] Event error:", error)
     }
   }, [lesson, lead])
 
-  if (loading) {
+  // Função para salvar progresso
+  const trackProgress = useCallback(async (currentTime: number, duration: number) => {
+    if (!lesson || !lead || duration <= 0) return
+
+    const percentWatched = Math.min((currentTime / duration) * 100, 100)
+
+    // Salvar progresso a cada 10 segundos
+    if (currentTime - lastTrackedTimeRef.current >= 10) {
+      lastTrackedTimeRef.current = currentTime
+
+      try {
+        await fetch("/api/lead/progress", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lessonId: lesson.id,
+            webinarId: lesson.webinar.id,
+            watchedSeconds: Math.floor(currentTime),
+            percentWatched: Math.floor(percentWatched)
+          })
+        })
+        console.log("[Tracking] Progress saved:", Math.floor(percentWatched) + "%")
+      } catch (error) {
+        console.error("[Tracking] Progress error:", error)
+      }
+    }
+
+    // Eventos de milestone (25%, 50%, 75%, 100%)
+    const milestones = [25, 50, 75, 100]
+    for (const milestone of milestones) {
+      if (percentWatched >= milestone && !trackedMilestonesRef.current.has(milestone)) {
+        trackedMilestonesRef.current.add(milestone)
+
+        const eventMap: Record<number, string> = {
+          25: "VIDEO_PROGRESS_25",
+          50: "VIDEO_PROGRESS_50",
+          75: "VIDEO_PROGRESS_75",
+          100: "VIDEO_COMPLETED"
+        }
+
+        trackEvent(eventMap[milestone], currentTime)
+      }
+    }
+
+    // Mostrar oferta no tempo configurado
+    if (lesson.offerShowAt && lesson.offerUrl && currentTime >= lesson.offerShowAt && !showOffer) {
+      setShowOffer(true)
+
+      if (!offerShownTracked) {
+        setOfferShownTracked(true)
+        trackEvent("OFFER_SHOWN", currentTime)
+      }
+    }
+  }, [lesson, lead, showOffer, offerShownTracked, trackEvent])
+
+  // Handler de play
+  const handlePlay = useCallback(() => {
+    trackEvent("VIDEO_PLAY")
+  }, [trackEvent])
+
+  // Handler de pause
+  const handlePause = useCallback((currentTime: number) => {
+    trackEvent("VIDEO_PAUSE", currentTime)
+  }, [trackEvent])
+
+  // Handler de fim do vídeo
+  const handleVideoEnded = useCallback(() => {
+    trackEvent("VIDEO_COMPLETED")
+  }, [trackEvent])
+
+  // Handler de clique na oferta
+  const handleOfferClick = useCallback(() => {
+    trackEvent("OFFER_CLICKED")
+  }, [trackEvent])
+
+  // Loading
+  if (loading || checkingLead) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+        <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
       </div>
     )
   }
 
-  if (!lesson) {
+  // Erro
+  if (error || !lesson) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <p className="text-zinc-400 mb-4">Aula não encontrada</p>
-          <Link href={`/w/${params.slug}`}>
-            <Button variant="outline">Voltar</Button>
+          <p className="text-red-500 mb-4">{error || "Aula não encontrada"}</p>
+          <Link href={`/w/${slug}`}>
+            <Button variant="outline">Voltar ao início</Button>
           </Link>
         </div>
       </div>
     )
   }
 
+  // Se não está logado, mostrar tela de login
+  if (!lead) {
+    return (
+      <LeadAuth
+        webinarId={lesson.webinar.id}
+        webinarSlug={lesson.webinar.slug}
+        webinarName={lesson.webinar.name}
+        webinarDescription={lesson.webinar.description}
+        logoUrl={lesson.webinar.logoUrl}
+        onSuccess={(newLead) => setLead(newLead)}
+      />
+    )
+  }
+
+  const currentIndex = lesson.allLessons.findIndex(l => l.slug === lessonSlug)
+
   return (
     <div className="min-h-screen bg-black">
       <WebinarHeader
         webinarName={lesson.webinar.name}
-        webinarSlug={lesson.webinar.slug}
         logoUrl={lesson.webinar.logoUrl}
       />
 
       <main className="container mx-auto px-4 py-6">
+        {/* Saudação personalizada */}
+        <p className="text-zinc-400 mb-4">
+          Olá, <span className="text-indigo-400 font-medium">{lead.name.split(" ")[0]}</span>! 👋
+        </p>
+
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Player e conteúdo principal */}
           <div className="flex-1">
@@ -159,9 +277,10 @@ export default function LessonPage() {
             <div className="mb-6">
               <YouTubePlayer
                 videoUrl={lesson.videoUrl}
-                offerShowAt={lesson.offerShowAt}
-                onOfferShow={() => setShowOffer(true)}
-                onTimeUpdate={handleTimeUpdate}
+                onEnded={handleVideoEnded}
+                onTimeUpdate={trackProgress}
+                onPlay={handlePlay}
+                onPause={handlePause}
               />
             </div>
 
@@ -194,98 +313,98 @@ export default function LessonPage() {
 
             {/* Título e descrição */}
             <div className="mb-6">
-              {lead && (
-                <p className="text-zinc-400 mb-2">
-                  Olá, <span className="text-indigo-400 font-medium">{lead.name.split(" ")[0]}</span>!
-                </p>
-              )}
               <h1 className="text-2xl font-bold text-white mb-2">{lesson.title}</h1>
-              {lesson.description && <p className="text-zinc-400">{lesson.description}</p>}
+              {lesson.description && (
+                <p className="text-zinc-400">{lesson.description}</p>
+              )}
             </div>
           </div>
 
-          {/* Lista de aulas (sidebar) */}
+          {/* Sidebar - Lista de aulas */}
           <div className="lg:w-80 flex-shrink-0">
-            <div className="bg-zinc-900 rounded-xl overflow-hidden sticky top-24">
-              <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide p-4 border-b border-zinc-800">
-                Aulas do curso
-              </h2>
-              <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
-                {lesson.allLessons.map((item, index) => {
-                  const isCurrent = item.slug === params.lessonSlug
-                  const isLocked = item.isLocked
-
-                  if (isLocked) {
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-3 p-3 border-b border-zinc-800/50 opacity-50"
-                      >
-                        <div className="relative w-28 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-800">
-                          {item.thumbnailUrl ? (
-                            <img
-                              src={item.thumbnailUrl}
-                              alt={item.title}
-                              className="w-full h-full object-cover grayscale"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Lock className="h-5 w-5 text-zinc-600" />
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <Lock className="h-5 w-5 text-zinc-400" />
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-zinc-500 truncate">{item.title}</p>
-                          <p className="text-xs text-zinc-600">Bloqueada</p>
-                        </div>
-                      </div>
-                    )
-                  }
+            <div className="bg-zinc-900 rounded-xl p-4 sticky top-24">
+              <h3 className="text-white font-semibold mb-4">Aulas</h3>
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                {lesson.allLessons.map((l, index) => {
+                  const isCurrent = l.slug === lessonSlug
+                  const isLocked = l.isLocked
 
                   return (
-                    <Link
-                      key={item.id}
-                      href={`/w/${lesson.webinar.slug}/aula/${item.slug}`}
-                      className={`flex items-center gap-3 p-3 border-b border-zinc-800/50 transition-colors ${
-                        isCurrent
-                          ? "bg-indigo-600/20"
-                          : "hover:bg-zinc-800/50"
+                    <div
+                      key={l.id}
+                      className={`relative rounded-lg overflow-hidden ${
+                        isLocked ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
                       }`}
                     >
-                      <div className="relative w-28 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-800">
-                        {item.thumbnailUrl ? (
-                          <img
-                            src={item.thumbnailUrl}
-                            alt={item.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Play className="h-5 w-5 text-zinc-500" />
-                          </div>
-                        )}
-                        {isCurrent && (
-                          <div className="absolute inset-0 bg-indigo-600/30 flex items-center justify-center">
-                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-                              <Play className="h-4 w-4 text-indigo-600 ml-0.5" />
+                      {!isLocked ? (
+                        <Link href={`/w/${slug}/aula/${l.slug}`}>
+                          <div className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                            isCurrent
+                              ? "bg-indigo-600/20 border border-indigo-600/50"
+                              : "hover:bg-zinc-800"
+                          }`}>
+                            {/* Thumbnail */}
+                            <div className="relative w-28 h-16 flex-shrink-0 rounded overflow-hidden bg-zinc-800">
+                              {l.thumbnailUrl ? (
+                                <img
+                                  src={l.thumbnailUrl}
+                                  alt={l.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Video className="h-6 w-6 text-zinc-600" />
+                                </div>
+                              )}
+                              {isCurrent && (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                  <Play className="h-6 w-6 text-white fill-white" />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-zinc-500 mb-1">Aula {index + 1}</p>
+                              <p className={`text-sm font-medium truncate ${
+                                isCurrent ? "text-indigo-400" : "text-white"
+                              }`}>
+                                {l.title}
+                              </p>
                             </div>
                           </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium truncate ${
-                          isCurrent ? "text-indigo-400" : "text-zinc-300"
-                        }`}>
-                          {item.title}
-                        </p>
-                        <p className={`text-xs ${isCurrent ? "text-indigo-400/70" : "text-zinc-500"}`}>
-                          Aula {index + 1}
-                        </p>
-                      </div>
-                    </Link>
+                        </Link>
+                      ) : (
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50">
+                          {/* Thumbnail locked */}
+                          <div className="relative w-28 h-16 flex-shrink-0 rounded overflow-hidden bg-zinc-800 grayscale">
+                            {l.thumbnailUrl ? (
+                              <img
+                                src={l.thumbnailUrl}
+                                alt={l.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Video className="h-6 w-6 text-zinc-600" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                              <Lock className="h-5 w-5 text-zinc-400" />
+                            </div>
+                          </div>
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-zinc-500 mb-1">Aula {index + 1}</p>
+                            <p className="text-sm font-medium text-zinc-500 truncate">
+                              {l.title}
+                            </p>
+                            <p className="text-xs text-zinc-600">Em breve</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
               </div>
