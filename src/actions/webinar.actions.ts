@@ -2,12 +2,12 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { getServerSession } from "@/lib/auth-helper"
+import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { createWebinarSchema, updateWebinarSchema } from "@/lib/validations/webinar"
 
 export async function getWebinars() {
-  const session = await getServerSession()
+  const session = await auth()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   return prisma.webinar.findMany({
@@ -22,7 +22,7 @@ export async function getWebinars() {
 }
 
 export async function getWebinarById(id: string) {
-  const session = await getServerSession()
+  const session = await auth()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   return prisma.webinar.findFirst({
@@ -49,7 +49,7 @@ export async function getWebinarById(id: string) {
 }
 
 export async function createWebinar(data: FormData) {
-  const session = await getServerSession()
+  const session = await auth()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   const formData = {
@@ -86,7 +86,7 @@ export async function createWebinar(data: FormData) {
 }
 
 export async function updateWebinar(id: string, data: FormData) {
-  const session = await getServerSession()
+  const session = await auth()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   const formData = {
@@ -121,7 +121,7 @@ export async function updateWebinar(id: string, data: FormData) {
 }
 
 export async function deleteWebinar(id: string) {
-  const session = await getServerSession()
+  const session = await auth()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   await prisma.webinar.delete({
@@ -133,7 +133,7 @@ export async function deleteWebinar(id: string) {
 }
 
 export async function toggleWebinarStatus(id: string, status: "DRAFT" | "PUBLISHED" | "ARCHIVED") {
-  const session = await getServerSession()
+  const session = await auth()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   await prisma.webinar.update({

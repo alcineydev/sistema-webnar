@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { getToken } from "next-auth/jwt"
+import { auth } from "@/lib/auth"
 
 export const dynamic = "force-dynamic"
 
@@ -11,12 +11,9 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    const token = await getToken({
-      req: request,
-      secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-    })
+    const session = await auth()
 
-    if (!token?.email) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 

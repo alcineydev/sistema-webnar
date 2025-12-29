@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-import { getServerSession } from "@/lib/auth-helper"
+import { auth } from "@/lib/auth"
 
 function generateSlug(title: string): string {
   return title
@@ -14,7 +14,7 @@ function generateSlug(title: string): string {
 }
 
 export async function getLessonsByWebinarId(webinarId: string) {
-  const session = await getServerSession()
+  const session = await auth()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   return prisma.lesson.findMany({
@@ -24,7 +24,7 @@ export async function getLessonsByWebinarId(webinarId: string) {
 }
 
 export async function getLessonById(id: string) {
-  const session = await getServerSession()
+  const session = await auth()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   return prisma.lesson.findUnique({
@@ -34,7 +34,7 @@ export async function getLessonById(id: string) {
 }
 
 export async function createLesson(webinarId: string, formData: FormData) {
-  const session = await getServerSession()
+  const session = await auth()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   try {
@@ -91,7 +91,7 @@ export async function createLesson(webinarId: string, formData: FormData) {
 }
 
 export async function updateLesson(lessonId: string, webinarId: string, formData: FormData) {
-  const session = await getServerSession()
+  const session = await auth()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   try {
@@ -140,7 +140,7 @@ export async function updateLesson(lessonId: string, webinarId: string, formData
 }
 
 export async function deleteLesson(lessonId: string, webinarId: string) {
-  const session = await getServerSession()
+  const session = await auth()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   try {
@@ -157,7 +157,7 @@ export async function deleteLesson(lessonId: string, webinarId: string) {
 }
 
 export async function reorderLessons(webinarId: string, lessonIds: string[]) {
-  const session = await getServerSession()
+  const session = await auth()
   if (!session?.user?.id) throw new Error("Não autorizado")
 
   await Promise.all(

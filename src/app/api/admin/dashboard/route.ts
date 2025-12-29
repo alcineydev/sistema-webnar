@@ -1,25 +1,20 @@
-import { NextRequest, NextResponse } from "next/server"
-import { getToken } from "next-auth/jwt"
+import { NextResponse } from "next/server"
+import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const token = await getToken({
-      req: request,
-      secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-    })
+    const session = await auth()
 
-    console.log("[Dashboard API] Token:", token ? "found" : "not found")
-
-    if (!token?.email) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
     // Busca o usuário pelo email
     const user = await prisma.user.findUnique({
-      where: { email: token.email as string }
+      where: { email: session.user.email }
     })
 
     if (!user) {
