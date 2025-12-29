@@ -101,8 +101,8 @@ export default function LessonPage() {
         if (data.lead) {
           setLead(data.lead)
         }
-      } catch {
-        console.error("Error checking lead:", err)
+      } catch (error) {
+        console.error("Error checking lead:", error)
       } finally {
         setCheckingLead(false)
       }
