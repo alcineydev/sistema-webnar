@@ -56,7 +56,7 @@ export function LessonList({ lessons, webinarId }: LessonListProps) {
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Video className="w-12 h-12 text-slate-300 mb-4" />
           <p className="text-slate-500 mb-4">Nenhuma aula criada ainda</p>
-          <Link href={`/admin/webinars/${webinarId}/lessons/new`}>
+          <Link href={`/admin/webinars/${webinarId}/aulas/nova`}>
             <Button>Criar primeira aula</Button>
           </Link>
         </CardContent>
@@ -133,7 +133,7 @@ export function LessonList({ lessons, webinarId }: LessonListProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href={`/admin/webinars/${webinarId}/lessons/${lesson.id}`}>
+                  <Link href={`/admin/webinars/${webinarId}/aulas/${lesson.id}`}>
                     <Pencil className="w-4 h-4 mr-2" />
                     Editar
                   </Link>
