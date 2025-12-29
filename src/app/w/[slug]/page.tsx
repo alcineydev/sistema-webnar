@@ -14,6 +14,12 @@ interface Webinar {
   firstLessonSlug: string | null
 }
 
+interface Lead {
+  id: string
+  email: string
+  name: string
+}
+
 export default function WebinarEntryPage() {
   const params = useParams()
   const searchParams = useSearchParams()
