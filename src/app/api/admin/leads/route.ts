@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getToken } from "next-auth/jwt"
+import { auth } from "@/lib/auth"
 import crypto from "crypto"
 
 export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
   try {
-    // Verificar autenticação admin
-    const token = await getToken({
-      req: request,
-      secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
-    })
+    // Verificar autenticação admin usando auth() do NextAuth v5
+    const session = await auth()
 
-    if (!token?.email) {
+    if (!session?.user?.email) {
+      console.log("[Admin Leads API] No session found")
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
@@ -21,6 +19,15 @@ export async function POST(request: NextRequest) {
 
     if (!email || !name || !webinarId) {
       return NextResponse.json({ error: "Email, nome e webinarId são obrigatórios" }, { status: 400 })
+    }
+
+    // Verificar se webinar existe
+    const webinar = await prisma.webinar.findUnique({
+      where: { id: webinarId }
+    })
+
+    if (!webinar) {
+      return NextResponse.json({ error: "Webinar não encontrado" }, { status: 404 })
     }
 
     // Verificar se já existe
@@ -34,7 +41,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (existing) {
-      return NextResponse.json({ error: "Este email já está cadastrado" }, { status: 409 })
+      return NextResponse.json({ error: "Este email já está cadastrado neste webinar" }, { status: 409 })
     }
 
     // Criar lead
@@ -60,6 +67,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, lead })
   } catch (error) {
     console.error("[Admin Leads API] Error:", error)
-    return NextResponse.json({ error: "Erro interno" }, { status: 500 })
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
   }
 }
