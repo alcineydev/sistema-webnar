@@ -35,9 +35,16 @@ interface LessonData {
   currentIndex: number
 }
 
+interface Lead {
+  id: string
+  email: string
+  name: string
+}
+
 export default function LessonPage() {
   const params = useParams()
   const [lesson, setLesson] = useState<LessonData | null>(null)
+  const [lead, setLead] = useState<Lead | null>(null)
   const [loading, setLoading] = useState(true)
   const [showOffer, setShowOffer] = useState(false)
 
@@ -51,6 +58,22 @@ export default function LessonPage() {
       })
       .finally(() => setLoading(false))
   }, [params.slug, params.lessonSlug])
+
+  // Buscar lead logado
+  useEffect(() => {
+    if (!lesson) return
+
+    fetch(`/api/lead/me?webinarSlug=${params.slug}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.lead) {
+          setLead(data.lead)
+        } else {
+          // Se não está logado, redirecionar para página de entrada
+          window.location.href = `/w/${params.slug}`
+        }
+      })
+  }, [lesson, params.slug])
 
   if (loading) {
     return (
@@ -118,6 +141,11 @@ export default function LessonPage() {
 
             {/* Título e descrição */}
             <div className="mb-6">
+              {lead && (
+                <p className="text-zinc-400 mb-2">
+                  Olá, <span className="text-indigo-400 font-medium">{lead.name.split(" ")[0]}</span>!
+                </p>
+              )}
               <h1 className="text-2xl font-bold text-white mb-2">{lesson.title}</h1>
               {lesson.description && <p className="text-zinc-400">{lesson.description}</p>}
             </div>
