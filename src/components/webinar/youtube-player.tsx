@@ -11,9 +11,55 @@ interface YouTubePlayerProps {
   onOfferShow?: () => void
 }
 
+interface YTPlayer {
+  destroy: () => void
+  playVideo: () => void
+  pauseVideo: () => void
+  mute: () => void
+  unMute: () => void
+  getCurrentTime: () => number
+  getDuration: () => number
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void
+}
+
+interface YTPlayerEvent {
+  target: YTPlayer
+  data: number
+}
+
+interface YTPlayerState {
+  PLAYING: number
+  PAUSED: number
+  ENDED: number
+}
+
+interface YT {
+  Player: new (elementId: string, config: YTPlayerConfig) => YTPlayer
+  PlayerState: YTPlayerState
+}
+
+interface YTPlayerConfig {
+  videoId: string
+  playerVars: {
+    autoplay: number
+    controls: number
+    modestbranding: number
+    rel: number
+    showinfo: number
+    fs: number
+    playsinline: number
+    disablekb: number
+    iv_load_policy: number
+  }
+  events: {
+    onReady: (event: YTPlayerEvent) => void
+    onStateChange: (event: YTPlayerEvent) => void
+  }
+}
+
 declare global {
   interface Window {
-    YT: any
+    YT: YT
     onYouTubeIframeAPIReady: () => void
   }
 }
@@ -31,7 +77,7 @@ export function YouTubePlayer({
   offerShowAt,
   onOfferShow
 }: YouTubePlayerProps) {
-  const playerRef = useRef<any>(null)
+  const playerRef = useRef<YTPlayer | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const playerContainerId = useRef(`youtube-player-${Math.random().toString(36).substring(7)}`)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -106,11 +152,11 @@ export function YouTubePlayer({
         iv_load_policy: 3,
       },
       events: {
-        onReady: (event: any) => {
+        onReady: (event: YTPlayerEvent) => {
           setIsReady(true)
           setDuration(event.target.getDuration())
         },
-        onStateChange: (event: any) => {
+        onStateChange: (event: YTPlayerEvent) => {
           if (event.data === window.YT.PlayerState.PLAYING) {
             setIsPlaying(true)
           } else if (event.data === window.YT.PlayerState.PAUSED) {
