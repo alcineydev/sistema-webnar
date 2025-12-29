@@ -23,13 +23,13 @@ interface LessonData {
   description: string | null
   videoUrl: string
   videoDuration: number | null
-  offerShowAt: number | null
+  offerUrl: string | null         // Da aula
+  offerButtonText: string | null  // Da aula
+  offerShowAt: number | null      // Da aula
   webinar: {
     name: string
     slug: string
     logoUrl: string | null
-    offerUrl: string | null
-    offerButtonText: string | null
   }
   allLessons: Lesson[]
   currentIndex: number
@@ -118,7 +118,7 @@ export default function LessonPage() {
             </div>
 
             {/* Oferta */}
-            {showOffer && lesson.webinar.offerUrl && (
+            {showOffer && lesson.offerUrl && (
               <div className="mb-6 p-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="flex items-center gap-4">
@@ -130,9 +130,9 @@ export default function LessonPage() {
                       <p className="text-white/80 text-sm">Aproveite esta oportunidade exclusiva</p>
                     </div>
                   </div>
-                  <a href={lesson.webinar.offerUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={lesson.offerUrl} target="_blank" rel="noopener noreferrer">
                     <Button size="lg" className="bg-white text-indigo-600 hover:bg-zinc-100">
-                      {lesson.webinar.offerButtonText || "Quero Aproveitar"}
+                      {lesson.offerButtonText || "Quero Aproveitar"}
                     </Button>
                   </a>
                 </div>

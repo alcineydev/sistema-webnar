@@ -1,6 +1,6 @@
 "use client"
 
-import { useTransition } from "react"
+import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
+import { Loader2, Gift } from "lucide-react"
 import { createLesson, updateLesson } from "@/actions/lesson.actions"
 import { ImageUpload } from "@/components/admin/image-upload"
 
@@ -21,6 +21,8 @@ interface Lesson {
   thumbnailUrl?: string | null
   isActive: boolean
   releaseAt?: Date | null
+  offerUrl?: string | null
+  offerButtonText?: string | null
   offerShowAt?: number | null
 }
 
@@ -33,17 +35,26 @@ export function LessonForm({ webinarId, lesson }: LessonFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const isEditing = !!lesson
+  const [hasOffer, setHasOffer] = useState(!!lesson?.offerUrl)
 
   const handleSubmit = async (formData: FormData) => {
+    // Se não tem oferta, limpar campos
+    if (!hasOffer) {
+      formData.set("offerUrl", "")
+      formData.set("offerButtonText", "")
+      formData.set("offerShowAt", "")
+    }
+
     startTransition(async () => {
       try {
         if (isEditing) {
           await updateLesson(lesson.id, webinarId, formData)
-          router.push(`/admin/webinars/${webinarId}`)
+          router.push(`/admin/webinars/${webinarId}/aulas`)
         } else {
           await createLesson(webinarId, formData)
-          router.push(`/admin/webinars/${webinarId}`)
+          router.push(`/admin/webinars/${webinarId}/aulas`)
         }
+        router.refresh()
       } catch (error) {
         alert(error instanceof Error ? error.message : "Erro ao salvar aula")
       }
@@ -67,34 +78,36 @@ export function LessonForm({ webinarId, lesson }: LessonFormProps) {
             <CardTitle>Informações da Aula</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Título *</Label>
-              <Input
-                id="title"
-                name="title"
-                defaultValue={lesson?.title}
-                required
-                placeholder="Ex: Aula 01 - Introdução"
-                onChange={(e) => {
-                  if (!isEditing) {
-                    const slugInput = document.getElementById("slug") as HTMLInputElement
-                    if (slugInput) {
-                      slugInput.value = generateSlug(e.target.value)
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="title">Título *</Label>
+                <Input
+                  id="title"
+                  name="title"
+                  defaultValue={lesson?.title}
+                  required
+                  placeholder="Ex: Aula 01 - Introdução"
+                  onChange={(e) => {
+                    if (!isEditing) {
+                      const slugInput = document.getElementById("slug") as HTMLInputElement
+                      if (slugInput) {
+                        slugInput.value = generateSlug(e.target.value)
+                      }
                     }
-                  }
-                }}
-              />
-            </div>
+                  }}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="slug">Slug (URL) *</Label>
-              <Input
-                id="slug"
-                name="slug"
-                defaultValue={lesson?.slug}
-                required
-                placeholder="aula-01-introducao"
-              />
+              <div className="space-y-2">
+                <Label htmlFor="slug">Slug (URL) *</Label>
+                <Input
+                  id="slug"
+                  name="slug"
+                  defaultValue={lesson?.slug}
+                  required
+                  placeholder="aula-01-introducao"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -130,6 +143,7 @@ export function LessonForm({ webinarId, lesson }: LessonFormProps) {
                 }}
                 folder="thumbnails"
               />
+              <input type="hidden" name="thumbnailUrl" defaultValue={lesson?.thumbnailUrl || ""} />
             </div>
 
             <div className="flex items-center justify-between">
@@ -149,7 +163,7 @@ export function LessonForm({ webinarId, lesson }: LessonFormProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Liberação e Oferta</CardTitle>
+            <CardTitle>Liberação</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -162,20 +176,77 @@ export function LessonForm({ webinarId, lesson }: LessonFormProps) {
               />
               <p className="text-sm text-slate-500">Deixe vazio para liberação imediata</p>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="offerShowAt">Mostrar Oferta aos (segundos)</Label>
-              <Input
-                id="offerShowAt"
-                name="offerShowAt"
-                type="number"
-                min="0"
-                defaultValue={lesson?.offerShowAt || ""}
-                placeholder="Ex: 1800 (30 minutos)"
-              />
-              <p className="text-sm text-slate-500">Tempo em segundos para mostrar o botão de oferta</p>
-            </div>
           </CardContent>
+        </Card>
+
+        {/* Oferta */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Gift className="h-5 w-5 text-indigo-600" />
+                <CardTitle>Oferta</CardTitle>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="hasOffer" className="text-sm text-slate-600">
+                  Esta aula possui oferta?
+                </Label>
+                <Switch
+                  id="hasOffer"
+                  checked={hasOffer}
+                  onCheckedChange={setHasOffer}
+                />
+              </div>
+            </div>
+          </CardHeader>
+          {hasOffer && (
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="offerUrl">Link da Oferta *</Label>
+                <Input
+                  id="offerUrl"
+                  name="offerUrl"
+                  type="url"
+                  defaultValue={lesson?.offerUrl || ""}
+                  placeholder="https://checkout.exemplo.com/oferta"
+                  required={hasOffer}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="offerButtonText">Texto do Botão</Label>
+                  <Input
+                    id="offerButtonText"
+                    name="offerButtonText"
+                    defaultValue={lesson?.offerButtonText || "Quero Aproveitar"}
+                    placeholder="Quero Aproveitar"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="offerShowAt">Exibir no segundo *</Label>
+                  <Input
+                    id="offerShowAt"
+                    name="offerShowAt"
+                    type="number"
+                    defaultValue={lesson?.offerShowAt || ""}
+                    placeholder="Ex: 300 (5 minutos)"
+                    required={hasOffer}
+                  />
+                  <p className="text-xs text-slate-500">
+                    Momento do vídeo em que a oferta aparece
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-indigo-50 p-3 rounded-lg">
+                <p className="text-sm text-indigo-700">
+                  💡 A oferta aparecerá como um banner quando o lead chegar no segundo especificado do vídeo.
+                </p>
+              </div>
+            </CardContent>
+          )}
         </Card>
 
         <div className="flex gap-4">

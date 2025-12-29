@@ -49,6 +49,8 @@ export async function createLesson(webinarId: string, data: FormData) {
     order: lastLesson ? lastLesson.order + 1 : 0,
     isActive: data.get("isActive") === "true",
     releaseAt: data.get("releaseAt") ? new Date(data.get("releaseAt") as string) : null,
+    offerUrl: data.get("offerUrl") as string || null,
+    offerButtonText: data.get("offerButtonText") as string || null,
     offerShowAt: data.get("offerShowAt") ? parseInt(data.get("offerShowAt") as string) : null,
   }
 
@@ -84,6 +86,8 @@ export async function updateLesson(id: string, webinarId: string, data: FormData
     thumbnailUrl: data.get("thumbnailUrl") as string || undefined,
     isActive: data.get("isActive") === "true",
     releaseAt: data.get("releaseAt") ? new Date(data.get("releaseAt") as string) : null,
+    offerUrl: data.get("offerUrl") as string || null,
+    offerButtonText: data.get("offerButtonText") as string || null,
     offerShowAt: data.get("offerShowAt") ? parseInt(data.get("offerShowAt") as string) : null,
   }
 

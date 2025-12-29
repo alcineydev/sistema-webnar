@@ -7,10 +7,13 @@ interface RouteParams {
   params: Promise<{ slug: string; lessonSlug: string }>
 }
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  { params }: RouteParams
+) {
   try {
     const { slug, lessonSlug } = await params
-    console.log("[Lesson API] Buscando aula:", { slug, lessonSlug })
+    console.log("[Lesson API] Request:", slug, lessonSlug)
 
     const webinar = await prisma.webinar.findUnique({
       where: { slug, status: "PUBLISHED" },
@@ -18,9 +21,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         id: true,
         name: true,
         slug: true,
+        description: true,
         logoUrl: true,
-        offerUrl: true,
-        offerButtonText: true,
         lessons: {
           where: { isActive: true },
           orderBy: { order: "asc" },
@@ -31,23 +33,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             order: true,
             thumbnailUrl: true,
             releaseAt: true,
-          },
-        },
-      },
+          }
+        }
+      }
     })
 
     if (!webinar) {
-      console.log("[Lesson API] Webinar não encontrado:", slug)
+      console.log("[Lesson API] Webinar not found")
       return NextResponse.json({ error: "Webinar não encontrado" }, { status: 404 })
     }
-
-    console.log("[Lesson API] Webinar encontrado:", { id: webinar.id, name: webinar.name, totalLessons: webinar.lessons.length })
 
     const lesson = await prisma.lesson.findFirst({
       where: {
         webinarId: webinar.id,
         slug: lessonSlug,
-        isActive: true,
+        isActive: true
       },
       select: {
         id: true,
@@ -56,40 +56,34 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         description: true,
         videoUrl: true,
         videoDuration: true,
+        offerUrl: true,
+        offerButtonText: true,
         offerShowAt: true,
         order: true,
-      },
+        releaseAt: true
+      }
     })
 
     if (!lesson) {
-      console.log("[Lesson API] Aula não encontrada:", lessonSlug)
+      console.log("[Lesson API] Lesson not found")
       return NextResponse.json({ error: "Aula não encontrada" }, { status: 404 })
     }
 
-    console.log("[Lesson API] Aula encontrada:", {
-      id: lesson.id,
-      title: lesson.title,
-      videoUrl: lesson.videoUrl,
-      videoDuration: lesson.videoDuration
-    })
-
-    // Verificar se a aula está bloqueada por data de liberação
-    const lessonInfo = webinar.lessons.find((l: { id: string }) => l.id === lesson.id)
-    if (lessonInfo?.releaseAt && new Date(lessonInfo.releaseAt) > new Date()) {
-      console.log("[Lesson API] Aula bloqueada por data:", { releaseAt: lessonInfo.releaseAt })
+    // Verificar se a aula está liberada
+    if (lesson.releaseAt && new Date(lesson.releaseAt) > new Date()) {
       return NextResponse.json({ error: "Esta aula ainda não está disponível" }, { status: 403 })
     }
 
-    const currentIndex = webinar.lessons.findIndex((l: { id: string }) => l.id === lesson.id)
-    const now = new Date()
+    console.log("[Lesson API] Found:", { id: lesson.id, title: lesson.title, offerUrl: lesson.offerUrl })
 
-    const allLessons = webinar.lessons.map((l: { id: string; title: string; slug: string; order: number; thumbnailUrl: string | null; releaseAt: Date | null }) => ({
+    const now = new Date()
+    const allLessons = webinar.lessons.map(l => ({
       id: l.id,
       title: l.title,
       slug: l.slug,
       order: l.order,
       thumbnailUrl: l.thumbnailUrl,
-      isLocked: l.releaseAt ? new Date(l.releaseAt) > now : false,
+      isLocked: l.releaseAt ? new Date(l.releaseAt) > now : false
     }))
 
     return NextResponse.json({
@@ -98,19 +92,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       description: lesson.description,
       videoUrl: lesson.videoUrl,
       videoDuration: lesson.videoDuration,
+      // Oferta agora vem da AULA, não do webinar
+      offerUrl: lesson.offerUrl,
+      offerButtonText: lesson.offerButtonText || "Quero Aproveitar",
       offerShowAt: lesson.offerShowAt,
       webinar: {
+        id: webinar.id,
         name: webinar.name,
         slug: webinar.slug,
-        logoUrl: webinar.logoUrl,
-        offerUrl: webinar.offerUrl,
-        offerButtonText: webinar.offerButtonText,
+        description: webinar.description,
+        logoUrl: webinar.logoUrl
       },
-      allLessons,
-      currentIndex,
+      allLessons
     })
   } catch (error) {
-    console.error("Lesson API error:", error)
+    console.error("[Lesson API] Error:", error)
     return NextResponse.json({ error: "Erro interno" }, { status: 500 })
   }
 }
