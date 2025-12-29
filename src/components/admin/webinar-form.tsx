@@ -175,7 +175,7 @@ export function WebinarForm({ webinar }: WebinarFormProps) {
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <p className="text-sm text-amber-800">
             💡 <strong>Dica:</strong> As ofertas agora são configuradas individualmente em cada aula.
-            Acesse a aba "Aulas" para configurar ofertas específicas por aula.
+            Acesse a aba Aulas para configurar ofertas específicas por aula.
           </p>
         </div>
 
