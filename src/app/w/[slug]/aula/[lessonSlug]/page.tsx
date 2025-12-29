@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { YouTubePlayer } from "@/components/webinar/youtube-player"
 import { WebinarHeader } from "@/components/webinar/webinar-header"
 import { LeadAuth } from "@/components/webinar/lead-auth"
@@ -10,7 +10,6 @@ import {
   Loader2,
   Play,
   Lock,
-  CheckCircle,
   Gift,
   Video
 } from "lucide-react"
@@ -52,7 +51,6 @@ interface LessonData {
 
 export default function LessonPage() {
   const params = useParams()
-  const router = useRouter()
   const slug = params.slug as string
   const lessonSlug = params.lessonSlug as string
 
@@ -81,7 +79,7 @@ export default function LessonPage() {
         }
 
         setLesson(data)
-      } catch (err) {
+      } catch {
         setError("Erro ao carregar aula")
       } finally {
         setLoading(false)
@@ -103,7 +101,7 @@ export default function LessonPage() {
         if (data.lead) {
           setLead(data.lead)
         }
-      } catch (err) {
+      } catch {
         console.error("Error checking lead:", err)
       } finally {
         setCheckingLead(false)
@@ -254,8 +252,6 @@ export default function LessonPage() {
       />
     )
   }
-
-  const currentIndex = lesson.allLessons.findIndex(l => l.slug === lessonSlug)
 
   return (
     <div className="min-h-screen bg-black">
