@@ -1,125 +1,166 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings } from "lucide-react"
+import { useEffect, useRef, useState, useCallback } from "react"
+import { Play, Pause, Volume2, VolumeX, Maximize } from "lucide-react"
 
 interface YouTubePlayerProps {
-  videoId: string
-  offerTime?: number | null
-  onOfferTrigger?: () => void
+  videoUrl: string
+  onTimeUpdate?: (currentTime: number) => void
+  onEnded?: () => void
+  offerShowAt?: number | null
+  onOfferShow?: () => void
 }
 
 declare global {
   interface Window {
-    YT: {
-      Player: new (
-        elementId: string,
-        config: {
-          videoId: string
-          playerVars?: Record<string, number | string>
-          events?: {
-            onReady?: (event: { target: YouTubePlayer }) => void
-            onStateChange?: (event: { data: number; target: YouTubePlayer }) => void
-          }
-        }
-      ) => YouTubePlayer
-      PlayerState: {
-        PLAYING: number
-        PAUSED: number
-        ENDED: number
-      }
-    }
+    YT: any
     onYouTubeIframeAPIReady: () => void
   }
 }
 
-interface YouTubePlayer {
-  playVideo: () => void
-  pauseVideo: () => void
-  mute: () => void
-  unMute: () => void
-  isMuted: () => boolean
-  getCurrentTime: () => number
-  getDuration: () => number
-  seekTo: (seconds: number, allowSeekAhead: boolean) => void
-  getPlayerState: () => number
+function getYouTubeVideoId(url: string): string | null {
+  const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
+  const match = url.match(regex)
+  return match ? match[1] : null
 }
 
-export function YouTubePlayer({ videoId, offerTime, onOfferTrigger }: YouTubePlayerProps) {
-  const playerRef = useRef<YouTubePlayer | null>(null)
+export function YouTubePlayer({
+  videoUrl,
+  onTimeUpdate,
+  onEnded,
+  offerShowAt,
+  onOfferShow
+}: YouTubePlayerProps) {
+  const playerRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const playerContainerId = useRef(`youtube-player-${Math.random().toString(36).substring(7)}`)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [isReady, setIsReady] = useState(false)
-  const [offerTriggered, setOfferTriggered] = useState(false)
+  const [showControls, setShowControls] = useState(true)
+  const [offerShown, setOfferShown] = useState(false)
+  const hideControlsTimeout = useRef<NodeJS.Timeout>()
+  const [apiLoaded, setApiLoaded] = useState(false)
 
+  const videoId = getYouTubeVideoId(videoUrl)
+
+  // Carregar API do YouTube apenas uma vez
   useEffect(() => {
+    if (window.YT && window.YT.Player) {
+      setApiLoaded(true)
+      return
+    }
+
+    const existingScript = document.querySelector('script[src="https://www.youtube.com/iframe_api"]')
+    if (existingScript) {
+      const checkReady = setInterval(() => {
+        if (window.YT && window.YT.Player) {
+          setApiLoaded(true)
+          clearInterval(checkReady)
+        }
+      }, 100)
+      return () => clearInterval(checkReady)
+    }
+
     const tag = document.createElement("script")
     tag.src = "https://www.youtube.com/iframe_api"
     const firstScriptTag = document.getElementsByTagName("script")[0]
     firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
 
     window.onYouTubeIframeAPIReady = () => {
-      playerRef.current = new window.YT.Player("youtube-player", {
-        videoId: videoId,
-        playerVars: {
-          autoplay: 0,
-          controls: 0,
-          modestbranding: 1,
-          rel: 0,
-          showinfo: 0,
-          fs: 0,
-          playsinline: 1,
-          disablekb: 1,
-          iv_load_policy: 3,
-        },
-        events: {
-          onReady: (event) => {
-            setIsReady(true)
-            setDuration(event.target.getDuration())
-          },
-          onStateChange: (event) => {
-            setIsPlaying(event.data === window.YT.PlayerState.PLAYING)
-          },
-        },
-      })
+      setApiLoaded(true)
     }
+  }, [])
+
+  // Criar/recriar player quando API carrega ou videoId muda
+  useEffect(() => {
+    if (!apiLoaded || !videoId) return
+
+    // Destruir player existente
+    if (playerRef.current) {
+      playerRef.current.destroy()
+      playerRef.current = null
+    }
+
+    // Reset states
+    setIsReady(false)
+    setIsPlaying(false)
+    setCurrentTime(0)
+    setDuration(0)
+    setOfferShown(false)
+
+    // Criar novo player
+    playerRef.current = new window.YT.Player(playerContainerId.current, {
+      videoId,
+      playerVars: {
+        autoplay: 0,
+        controls: 0,
+        modestbranding: 1,
+        rel: 0,
+        showinfo: 0,
+        fs: 0,
+        playsinline: 1,
+        disablekb: 1,
+        iv_load_policy: 3,
+      },
+      events: {
+        onReady: (event: any) => {
+          setIsReady(true)
+          setDuration(event.target.getDuration())
+        },
+        onStateChange: (event: any) => {
+          if (event.data === window.YT.PlayerState.PLAYING) {
+            setIsPlaying(true)
+          } else if (event.data === window.YT.PlayerState.PAUSED) {
+            setIsPlaying(false)
+          } else if (event.data === window.YT.PlayerState.ENDED) {
+            setIsPlaying(false)
+            onEnded?.()
+          }
+        },
+      },
+    })
 
     return () => {
-      window.onYouTubeIframeAPIReady = () => {}
+      if (playerRef.current) {
+        playerRef.current.destroy()
+        playerRef.current = null
+      }
     }
-  }, [videoId])
+  }, [apiLoaded, videoId, onEnded])
 
+  // Atualizar tempo e verificar oferta
   useEffect(() => {
     if (!isReady || !isPlaying) return
 
     const interval = setInterval(() => {
-      if (playerRef.current) {
+      if (playerRef.current && playerRef.current.getCurrentTime) {
         const time = playerRef.current.getCurrentTime()
         setCurrentTime(time)
+        onTimeUpdate?.(time)
 
-        if (offerTime && time >= offerTime && !offerTriggered) {
-          setOfferTriggered(true)
-          onOfferTrigger?.()
+        if (offerShowAt && time >= offerShowAt && !offerShown) {
+          setOfferShown(true)
+          onOfferShow?.()
         }
       }
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [isReady, isPlaying, offerTime, offerTriggered, onOfferTrigger])
+  }, [isReady, isPlaying, onTimeUpdate, offerShowAt, offerShown, onOfferShow])
 
-  const togglePlay = () => {
+  const handlePlayPause = useCallback(() => {
     if (!playerRef.current) return
     if (isPlaying) {
       playerRef.current.pauseVideo()
     } else {
       playerRef.current.playVideo()
     }
-  }
+  }, [isPlaying])
 
-  const toggleMute = () => {
+  const handleMuteToggle = useCallback(() => {
     if (!playerRef.current) return
     if (isMuted) {
       playerRef.current.unMute()
@@ -128,26 +169,36 @@ export function YouTubePlayer({ videoId, offerTime, onOfferTrigger }: YouTubePla
       playerRef.current.mute()
       setIsMuted(true)
     }
-  }
+  }, [isMuted])
 
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!playerRef.current || !duration) return
     const rect = e.currentTarget.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const percentage = x / rect.width
-    const seekTime = percentage * duration
-    playerRef.current.seekTo(seekTime, true)
-    setCurrentTime(seekTime)
-  }
+    const pos = (e.clientX - rect.left) / rect.width
+    const newTime = pos * duration
+    playerRef.current.seekTo(newTime, true)
+    setCurrentTime(newTime)
+  }, [duration])
 
-  const toggleFullscreen = () => {
-    if (!containerRef.current) return
-    if (document.fullscreenElement) {
-      document.exitFullscreen()
-    } else {
-      containerRef.current.requestFullscreen()
+  const handleFullscreen = useCallback(() => {
+    if (containerRef.current) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen()
+      } else {
+        containerRef.current.requestFullscreen()
+      }
     }
-  }
+  }, [])
+
+  const handleMouseMove = useCallback(() => {
+    setShowControls(true)
+    if (hideControlsTimeout.current) {
+      clearTimeout(hideControlsTimeout.current)
+    }
+    hideControlsTimeout.current = setTimeout(() => {
+      if (isPlaying) setShowControls(false)
+    }, 3000)
+  }, [isPlaying])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -155,81 +206,98 @@ export function YouTubePlayer({ videoId, offerTime, onOfferTrigger }: YouTubePla
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
+  const progress = duration ? (currentTime / duration) * 100 : 0
+
+  if (!videoId) {
+    return (
+      <div className="aspect-video bg-zinc-900 rounded-xl flex items-center justify-center">
+        <p className="text-zinc-500">URL de vídeo inválida</p>
+      </div>
+    )
+  }
 
   return (
     <div
       ref={containerRef}
-      className="group relative aspect-video w-full overflow-hidden rounded-xl bg-black"
+      className="relative aspect-video bg-black rounded-xl overflow-hidden group"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => isPlaying && setShowControls(false)}
     >
-      <div id="youtube-player" className="absolute inset-0 w-full h-full" />
+      <div id={playerContainerId.current} className="absolute inset-0 w-full h-full" />
 
-      {/* Custom overlay controls */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={togglePlay}
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors"
-        >
-          {isPlaying ? (
-            <Pause className="h-8 w-8" />
-          ) : (
-            <Play className="h-8 w-8 ml-1" />
-          )}
-        </button>
-      </div>
+      {/* Overlay para capturar cliques */}
+      <div
+        className="absolute inset-0 cursor-pointer"
+        onClick={handlePlayPause}
+      />
 
-      {/* Bottom controls bar */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-        {/* Progress bar */}
-        <div
-          className="mb-3 h-1 w-full cursor-pointer rounded-full bg-white/30"
-          onClick={handleSeek}
-        >
-          <div
-            className="h-full rounded-full bg-indigo-500 relative"
-            style={{ width: `${progress}%` }}
-          >
-            <div className="absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-indigo-400" />
-          </div>
+      {/* Loading */}
+      {!isReady && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black">
+          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
         </div>
+      )}
 
-        {/* Controls */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={togglePlay}
-              className="text-white hover:text-indigo-400 transition-colors"
+      {/* Controles customizados */}
+      <div className={`absolute inset-0 flex flex-col justify-end transition-opacity duration-300 ${showControls && isReady ? "opacity-100" : "opacity-0"}`}>
+        {/* Gradiente de fundo */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+
+        {/* Botão de play central */}
+        {!isPlaying && isReady && (
+          <button
+            onClick={handlePlayPause}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-20 w-20 items-center justify-center rounded-full bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+          >
+            <Play className="h-10 w-10 ml-1" />
+          </button>
+        )}
+
+        {/* Barra de controles inferior */}
+        <div className="relative z-10 p-4 space-y-3">
+          {/* Barra de progresso */}
+          <div
+            className="h-1 bg-zinc-700 rounded-full cursor-pointer group/progress"
+            onClick={handleSeek}
+          >
+            <div
+              className="h-full bg-indigo-600 rounded-full relative transition-all"
+              style={{ width: `${progress}%` }}
             >
-              {isPlaying ? (
-                <Pause className="h-5 w-5" />
-              ) : (
-                <Play className="h-5 w-5" />
-              )}
-            </button>
-            <button
-              onClick={toggleMute}
-              className="text-white hover:text-indigo-400 transition-colors"
-            >
-              {isMuted ? (
-                <VolumeX className="h-5 w-5" />
-              ) : (
-                <Volume2 className="h-5 w-5" />
-              )}
-            </button>
-            <span className="text-sm text-white/80">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 h-3 w-3 bg-white rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity" />
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <button className="text-white hover:text-indigo-400 transition-colors">
-              <Settings className="h-5 w-5" />
-            </button>
-            <button
-              onClick={toggleFullscreen}
-              className="text-white hover:text-indigo-400 transition-colors"
-            >
-              <Maximize className="h-5 w-5" />
-            </button>
+
+          {/* Controles */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handlePlayPause}
+                className="text-white hover:text-indigo-400 transition-colors"
+              >
+                {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+              </button>
+
+              <button
+                onClick={handleMuteToggle}
+                className="text-white hover:text-indigo-400 transition-colors"
+              >
+                {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
+              </button>
+
+              <span className="text-sm text-zinc-300">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleFullscreen}
+                className="text-white hover:text-indigo-400 transition-colors"
+              >
+                <Maximize className="h-6 w-6" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

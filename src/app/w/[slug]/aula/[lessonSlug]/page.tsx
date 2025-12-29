@@ -35,12 +35,6 @@ interface LessonData {
   currentIndex: number
 }
 
-function extractYouTubeId(url: string): string | null {
-  const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
-  const match = url.match(regex)
-  return match ? match[1] : null
-}
-
 export default function LessonPage() {
   const params = useParams()
   const [lesson, setLesson] = useState<LessonData | null>(null)
@@ -79,8 +73,6 @@ export default function LessonPage() {
     )
   }
 
-  const videoId = extractYouTubeId(lesson.videoUrl)
-
   return (
     <div className="min-h-screen bg-black">
       <WebinarHeader
@@ -95,17 +87,11 @@ export default function LessonPage() {
           <div className="flex-1">
             {/* Player */}
             <div className="mb-6">
-              {videoId ? (
-                <YouTubePlayer
-                  videoId={videoId}
-                  offerTime={lesson.offerShowAt}
-                  onOfferTrigger={() => setShowOffer(true)}
-                />
-              ) : (
-                <div className="aspect-video rounded-xl bg-zinc-800 flex items-center justify-center">
-                  <p className="text-zinc-400">Vídeo não disponível</p>
-                </div>
-              )}
+              <YouTubePlayer
+                videoUrl={lesson.videoUrl}
+                offerShowAt={lesson.offerShowAt}
+                onOfferShow={() => setShowOffer(true)}
+              />
             </div>
 
             {/* Oferta */}
