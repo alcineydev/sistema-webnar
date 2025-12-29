@@ -14,12 +14,6 @@ interface Webinar {
   firstLessonSlug: string | null
 }
 
-interface Lead {
-  id: string
-  email: string
-  name: string
-}
-
 export default function WebinarEntryPage() {
   const params = useParams()
   const searchParams = useSearchParams()
@@ -28,7 +22,7 @@ export default function WebinarEntryPage() {
   const token = searchParams.get("token")
 
   const [webinar, setWebinar] = useState<Webinar | null>(null)
-  const [lead, setLead] = useState<Lead | null>(null)
+  const [, setLead] = useState<Lead | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 

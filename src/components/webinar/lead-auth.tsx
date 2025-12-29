@@ -18,7 +18,7 @@ interface LeadAuthProps {
 type AuthMode = "login" | "register"
 
 export function LeadAuth({
-  webinarId,
+  webinarId: _webinarId,
   webinarSlug,
   webinarName,
   webinarDescription,
@@ -26,6 +26,8 @@ export function LeadAuth({
   onSuccess,
   initialToken
 }: LeadAuthProps) {
+  // _webinarId mantido na interface para uso futuro
+  void _webinarId
   const [mode, setMode] = useState<AuthMode>("login")
   const [identifier, setIdentifier] = useState("") // email ou telefone
   const [name, setName] = useState("")
