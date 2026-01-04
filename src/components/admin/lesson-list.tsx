@@ -53,7 +53,7 @@ export function LessonList({ lessons, webinarId }: LessonListProps) {
 
     setDeletingId(lessonId)
     try {
-      await deleteLesson(lessonId)
+      await deleteLesson(lessonId, webinarId)
     } catch (error) {
       console.error("Error deleting lesson:", error)
       alert("Erro ao excluir aula")
