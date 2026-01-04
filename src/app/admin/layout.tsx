@@ -1,24 +1,38 @@
-"use client"
+import { Metadata } from "next"
+import { prisma } from "@/lib/prisma"
+import { AdminLayoutClient } from "@/components/admin/admin-layout-client"
 
-import { usePathname } from "next/navigation"
-import { Sidebar } from "@/components/admin/sidebar"
-import { AdminHeader } from "@/components/admin/admin-header"
+export async function generateMetadata(): Promise<Metadata> {
+  let faviconUrl = null
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
-
-  // Se for página de login, renderiza sem sidebar
-  if (pathname === "/admin/login") {
-    return <>{children}</>
+  try {
+    const setting = await prisma.systemSettings.findUnique({
+      where: { key: "adminFaviconUrl" }
+    })
+    faviconUrl = setting?.value
+  } catch {
+    // Tabela pode não existir ainda
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <Sidebar />
-      <div className="pl-64">
-        <AdminHeader />
-        <main className="p-6">{children}</main>
-      </div>
-    </div>
-  )
+  const metadata: Metadata = {
+    title: "Admin | Sistema Webinar",
+  }
+
+  if (faviconUrl) {
+    metadata.icons = {
+      icon: faviconUrl,
+      shortcut: faviconUrl,
+      apple: faviconUrl,
+    }
+  }
+
+  return metadata
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return <AdminLayoutClient>{children}</AdminLayoutClient>
 }

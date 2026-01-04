@@ -1,5 +1,6 @@
 import { Metadata } from "next"
 import { prisma } from "@/lib/prisma"
+import { ThemeProvider } from "@/components/theme-provider"
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -18,17 +19,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   })
 
-  return {
+  const metadata: Metadata = {
     title: webinar?.name || "Webinar",
     description: webinar?.description || "",
-    icons: webinar?.faviconUrl ? {
-      icon: webinar.faviconUrl,
+  }
+
+  if (webinar?.faviconUrl) {
+    metadata.icons = {
+      icon: [
+        { url: webinar.faviconUrl },
+        { url: webinar.faviconUrl, sizes: "32x32", type: "image/png" },
+      ],
       shortcut: webinar.faviconUrl,
       apple: webinar.faviconUrl,
-    } : undefined
+    }
   }
+
+  return metadata
 }
 
 export default function WebinarLayout({ children }: Props) {
-  return children
+  return (
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      {children}
+    </ThemeProvider>
+  )
 }
