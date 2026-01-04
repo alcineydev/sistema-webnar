@@ -67,7 +67,7 @@ export default function ConfiguracoesPage() {
       ])
       alert("Configurações salvas com sucesso!")
       window.location.reload()
-    } catch (error) {
+    } catch {
       alert("Erro ao salvar configurações")
     } finally {
       setSaving(false)
