@@ -45,7 +45,10 @@ export async function createLesson(webinarId: string, formData: FormData) {
     const videoDuration = formData.get("videoDuration") ? parseInt(formData.get("videoDuration") as string) : null
     const thumbnailUrl = formData.get("thumbnailUrl") as string || null
     const isActive = formData.get("isActive") === "true"
+    const releaseType = formData.get("releaseType") as string || "immediate"
     const releaseAt = formData.get("releaseAt") ? new Date(formData.get("releaseAt") as string) : null
+    const releaseAfterHoursRaw = formData.get("releaseAfterHours") as string
+    const releaseAfterHours = releaseAfterHoursRaw && releaseAfterHoursRaw.trim() !== "" ? parseInt(releaseAfterHoursRaw) : null
 
     // Campos de oferta
     const offerUrlRaw = formData.get("offerUrl") as string
@@ -74,7 +77,9 @@ export async function createLesson(webinarId: string, formData: FormData) {
         thumbnailUrl,
         order,
         isActive,
+        releaseType,
         releaseAt,
+        releaseAfterHours,
         offerUrl,
         offerButtonText,
         offerShowAt,
@@ -102,7 +107,10 @@ export async function updateLesson(lessonId: string, webinarId: string, formData
     const videoDuration = formData.get("videoDuration") ? parseInt(formData.get("videoDuration") as string) : null
     const thumbnailUrl = formData.get("thumbnailUrl") as string || null
     const isActive = formData.get("isActive") === "true"
+    const releaseType = formData.get("releaseType") as string || "immediate"
     const releaseAt = formData.get("releaseAt") ? new Date(formData.get("releaseAt") as string) : null
+    const releaseAfterHoursRaw = formData.get("releaseAfterHours") as string
+    const releaseAfterHours = releaseAfterHoursRaw && releaseAfterHoursRaw.trim() !== "" ? parseInt(releaseAfterHoursRaw) : null
 
     // Campos de oferta - tratar strings vazias como null
     const offerUrlRaw = formData.get("offerUrl") as string
@@ -124,7 +132,9 @@ export async function updateLesson(lessonId: string, webinarId: string, formData
         videoDuration,
         thumbnailUrl,
         isActive,
+        releaseType,
         releaseAt,
+        releaseAfterHours,
         offerUrl,
         offerButtonText,
         offerShowAt

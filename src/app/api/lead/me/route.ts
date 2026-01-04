@@ -49,8 +49,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ lead: null })
     }
 
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
+    // Buscar lead garantindo que pertence ao webinar correto
+    const lead = await prisma.lead.findFirst({
+      where: {
+        id: leadId,
+        webinarId: webinar.id // Garantir que o lead pertence a este webinar
+      },
       select: {
         id: true,
         email: true,
@@ -63,6 +67,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!lead) {
+      console.log("[Lead Me] Lead não encontrado ou não pertence ao webinar")
       return NextResponse.json({ lead: null })
     }
 

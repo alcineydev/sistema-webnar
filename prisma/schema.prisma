@@ -71,25 +71,27 @@ enum ReleaseType {
 
 // AULAS
 model Lesson {
-  id              String        @id @default(cuid())
-  title           String
-  slug            String
-  description     String?
-  videoUrl        String
-  videoDuration   Int?
-  thumbnailUrl    String?
-  order           Int           @default(0)
-  isActive        Boolean       @default(true)
-  releaseAt       DateTime?
-  offerUrl        String?
-  offerButtonText String?
-  offerShowAt     Int?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  webinarId       String
-  webinar         Webinar       @relation(fields: [webinarId], references: [id], onDelete: Cascade)
-  progress        LeadProgress[]
-  events          LeadEvent[]
+  id                String        @id @default(cuid())
+  title             String
+  slug              String
+  description       String?
+  videoUrl          String
+  videoDuration     Int?
+  thumbnailUrl      String?
+  order             Int           @default(0)
+  isActive          Boolean       @default(true)
+  releaseType       String        @default("immediate") // immediate, scheduled, sequential
+  releaseAt         DateTime?
+  releaseAfterHours Int?          // Para sequential: horas após completar aula anterior
+  offerUrl          String?
+  offerButtonText   String?
+  offerShowAt       Int?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  webinarId         String
+  webinar           Webinar       @relation(fields: [webinarId], references: [id], onDelete: Cascade)
+  progress          LeadProgress[]
+  events            LeadEvent[]
 
   @@unique([webinarId, slug])
   @@index([webinarId, order])

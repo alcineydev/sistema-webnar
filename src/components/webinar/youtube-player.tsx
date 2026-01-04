@@ -270,11 +270,11 @@ export function YouTubePlayer({
   return (
     <div
       ref={containerRef}
-      className="relative aspect-video bg-black rounded-xl overflow-hidden group"
+      className="relative w-full aspect-video bg-black rounded-xl overflow-hidden group"
       onMouseMove={() => setShowControls(true)}
     >
       {/* Player container */}
-      <div id={playerContainerId} className="absolute inset-0" />
+      <div id={playerContainerId} className="absolute inset-0 w-full h-full" />
 
       {/* Loading overlay */}
       {!isReady && (
@@ -295,8 +295,8 @@ export function YouTubePlayer({
           className="absolute inset-0 flex items-center justify-center"
         >
           {!isPlaying && isReady && (
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-indigo-600/90 hover:bg-indigo-600 transition-colors">
-              <Play className="h-10 w-10 text-white fill-white ml-1" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600/90 hover:bg-indigo-600 transition-colors">
+              <Play className="h-8 w-8 text-white fill-white ml-1" />
             </div>
           )}
         </button>

@@ -61,6 +61,7 @@ export default function LessonPage() {
   const [error, setError] = useState<string | null>(null)
   const [showOffer, setShowOffer] = useState(false)
   const [offerShownTracked, setOfferShownTracked] = useState(false)
+  const [showFullDescription, setShowFullDescription] = useState(false)
 
   // Tracking refs
   const lastTrackedTimeRef = useRef(0)
@@ -271,7 +272,7 @@ export default function LessonPage() {
           {/* Player e conteúdo principal */}
           <div className="flex-1">
             {/* Player */}
-            <div className="mb-6">
+            <div className="mb-6 w-full">
               <YouTubePlayer
                 videoUrl={lesson.videoUrl}
                 onEnded={handleVideoEnded}
@@ -310,9 +311,31 @@ export default function LessonPage() {
 
             {/* Título e descrição */}
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-white mb-2">{lesson.title}</h1>
+              <h1 className="text-2xl font-bold text-white mb-4">{lesson.title}</h1>
               {lesson.description && (
-                <p className="text-zinc-400">{lesson.description}</p>
+                <div className="bg-zinc-900 rounded-lg p-4 border border-zinc-800">
+                  <div
+                    className={`prose prose-invert prose-sm max-w-none ${
+                      !showFullDescription ? "line-clamp-3" : ""
+                    }`}
+                    dangerouslySetInnerHTML={{
+                      __html: lesson.description
+                        .replace(/\n/g, '<br/>')
+                        .replace(
+                          /(https?:\/\/[^\s<]+)/g,
+                          '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:text-indigo-300 underline">$1</a>'
+                        )
+                    }}
+                  />
+                  {lesson.description.length > 200 && (
+                    <button
+                      onClick={() => setShowFullDescription(!showFullDescription)}
+                      className="mt-3 text-sm text-indigo-400 hover:text-indigo-300 font-medium"
+                    >
+                      {showFullDescription ? "Ver menos ▲" : "Ver mais ▼"}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </div>

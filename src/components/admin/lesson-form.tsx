@@ -20,7 +20,9 @@ interface Lesson {
   videoUrl: string
   thumbnailUrl?: string | null
   isActive: boolean
+  releaseType?: string
   releaseAt?: Date | null
+  releaseAfterHours?: number | null
   offerUrl?: string | null
   offerButtonText?: string | null
   offerShowAt?: number | null
@@ -36,6 +38,7 @@ export function LessonForm({ webinarId, lesson }: LessonFormProps) {
   const [isPending, startTransition] = useTransition()
   const isEditing = !!lesson
   const [hasOffer, setHasOffer] = useState(!!lesson?.offerUrl)
+  const [releaseType, setReleaseType] = useState(lesson?.releaseType || "immediate")
 
   const handleSubmit = async (formData: FormData) => {
     // Se não tem oferta, limpar campos
@@ -167,15 +170,52 @@ export function LessonForm({ webinarId, lesson }: LessonFormProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="releaseAt">Data de Liberação</Label>
-              <Input
-                id="releaseAt"
-                name="releaseAt"
-                type="datetime-local"
-                defaultValue={lesson?.releaseAt ? new Date(lesson.releaseAt).toISOString().slice(0, 16) : ""}
-              />
-              <p className="text-sm text-slate-500">Deixe vazio para liberação imediata</p>
+              <Label htmlFor="releaseType">Tipo de Liberação</Label>
+              <select
+                id="releaseType"
+                name="releaseType"
+                value={releaseType}
+                onChange={(e) => setReleaseType(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-lg bg-white text-slate-900"
+              >
+                <option value="immediate">Imediata (disponível agora)</option>
+                <option value="scheduled">Data específica</option>
+                <option value="sequential">Sequencial (após completar anterior)</option>
+              </select>
             </div>
+
+            {releaseType === "scheduled" && (
+              <div className="space-y-2">
+                <Label htmlFor="releaseAt">Data de Liberação</Label>
+                <Input
+                  id="releaseAt"
+                  name="releaseAt"
+                  type="datetime-local"
+                  defaultValue={lesson?.releaseAt ? new Date(lesson.releaseAt).toISOString().slice(0, 16) : ""}
+                />
+              </div>
+            )}
+
+            {releaseType === "sequential" && (
+              <div className="space-y-2">
+                <Label htmlFor="releaseAfterHours">Liberar após (horas)</Label>
+                <Input
+                  id="releaseAfterHours"
+                  name="releaseAfterHours"
+                  type="number"
+                  defaultValue={lesson?.releaseAfterHours || 24}
+                  min={1}
+                  placeholder="24"
+                />
+                <p className="text-xs text-slate-500">
+                  Horas após o lead completar a aula anterior
+                </p>
+              </div>
+            )}
+
+            {releaseType === "immediate" && (
+              <p className="text-sm text-slate-500">A aula estará disponível imediatamente para todos os leads.</p>
+            )}
           </CardContent>
         </Card>
 
