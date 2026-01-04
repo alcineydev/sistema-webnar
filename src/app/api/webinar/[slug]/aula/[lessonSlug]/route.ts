@@ -25,6 +25,7 @@ export async function GET(
         logoUrl: true,
         logoLightUrl: true,
         logoDarkUrl: true,
+        faviconUrl: true,
         primaryColor: true,
         lessons: {
           where: { isActive: true },
@@ -107,6 +108,7 @@ export async function GET(
         logoUrl: webinar.logoUrl,
         logoLightUrl: webinar.logoLightUrl,
         logoDarkUrl: webinar.logoDarkUrl,
+        faviconUrl: webinar.faviconUrl,
         primaryColor: webinar.primaryColor
       },
       allLessons

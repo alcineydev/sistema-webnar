@@ -5,6 +5,7 @@ import { useParams } from "next/navigation"
 import { YouTubePlayer } from "@/components/webinar/youtube-player"
 import { WebinarHeader } from "@/components/webinar/webinar-header"
 import { LeadAuth } from "@/components/webinar/lead-auth"
+import { DynamicFavicon } from "@/components/webinar/dynamic-favicon"
 import { Button } from "@/components/ui/button"
 import {
   Loader2,
@@ -56,6 +57,7 @@ interface LessonData {
     logoUrl: string | null
     logoLightUrl: string | null
     logoDarkUrl: string | null
+    faviconUrl: string | null
     primaryColor: string | null
   }
   allLessons: Lesson[]
@@ -232,47 +234,58 @@ export default function LessonPage() {
   // Loading
   if (loading || checkingLead) {
     return (
-      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
-      </div>
+      <>
+        <DynamicFavicon faviconUrl={lesson?.webinar?.faviconUrl || null} />
+        <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
+          <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
+        </div>
+      </>
     )
   }
 
   // Erro
   if (error || !lesson) {
     return (
-      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">{error || "Aula não encontrada"}</p>
-          <Link href={`/w/${slug}`}>
-            <Button variant="outline">Voltar ao início</Button>
-          </Link>
+      <>
+        <DynamicFavicon faviconUrl={lesson?.webinar?.faviconUrl || null} />
+        <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-500 mb-4">{error || "Aula não encontrada"}</p>
+            <Link href={`/w/${slug}`}>
+              <Button variant="outline">Voltar ao início</Button>
+            </Link>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
   // Se não está logado, mostrar tela de login
   if (!lead) {
     return (
-      <LeadAuth
-        webinarId={lesson.webinar.id}
-        webinarSlug={lesson.webinar.slug}
-        webinarName={lesson.webinar.name}
-        webinarDescription={lesson.webinar.description}
-        logoUrl={lesson.webinar.logoUrl}
-        logoLightUrl={lesson.webinar.logoLightUrl}
-        logoDarkUrl={lesson.webinar.logoDarkUrl}
-        onSuccess={(newLead) => setLead(newLead)}
-      />
+      <>
+        <DynamicFavicon faviconUrl={lesson.webinar.faviconUrl} />
+        <LeadAuth
+          webinarId={lesson.webinar.id}
+          webinarSlug={lesson.webinar.slug}
+          webinarName={lesson.webinar.name}
+          webinarDescription={lesson.webinar.description}
+          logoUrl={lesson.webinar.logoUrl}
+          logoLightUrl={lesson.webinar.logoLightUrl}
+          logoDarkUrl={lesson.webinar.logoDarkUrl}
+          onSuccess={(newLead) => setLead(newLead)}
+        />
+      </>
     )
   }
 
   const primaryColor = lesson.webinar.primaryColor || "#6366f1"
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black">
-      <WebinarHeader
+    <>
+      <DynamicFavicon faviconUrl={lesson.webinar.faviconUrl} />
+      <div className="min-h-screen bg-white dark:bg-black">
+        <WebinarHeader
         webinarName={lesson.webinar.name}
         webinarSlug={lesson.webinar.slug}
         logoUrl={lesson.webinar.logoUrl}
@@ -468,6 +481,7 @@ export default function LessonPage() {
           </div>
         </div>
       </main>
-    </div>
+      </div>
+    </>
   )
 }

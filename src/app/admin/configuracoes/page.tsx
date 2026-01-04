@@ -11,7 +11,6 @@ export default function ConfiguracoesPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [adminLogoUrl, setAdminLogoUrl] = useState("")
-  const [adminLogoDarkUrl, setAdminLogoDarkUrl] = useState("")
   const [adminFaviconUrl, setAdminFaviconUrl] = useState("")
 
   useEffect(() => {
@@ -21,7 +20,6 @@ export default function ConfiguracoesPage() {
         const data = await response.json()
 
         setAdminLogoUrl(data.adminLogoUrl || "")
-        setAdminLogoDarkUrl(data.adminLogoDarkUrl || "")
         setAdminFaviconUrl(data.adminFaviconUrl || "")
       } catch (error) {
         console.error("Error loading settings:", error)
@@ -51,10 +49,10 @@ export default function ConfiguracoesPage() {
     try {
       await Promise.all([
         saveSetting("adminLogoUrl", adminLogoUrl),
-        saveSetting("adminLogoDarkUrl", adminLogoDarkUrl),
         saveSetting("adminFaviconUrl", adminFaviconUrl),
       ])
       alert("Configurações salvas com sucesso!")
+      window.location.reload()
     } catch {
       alert("Erro ao salvar configurações")
     } finally {
@@ -71,13 +69,13 @@ export default function ConfiguracoesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-8 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Configurações</h1>
         <p className="text-slate-500">Configure a aparência do painel administrativo</p>
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid gap-6 max-w-2xl">
         {/* Logo do Admin */}
         <Card>
           <CardHeader>
@@ -86,29 +84,16 @@ export default function ConfiguracoesPage() {
               <CardTitle>Logo do Painel</CardTitle>
             </div>
             <CardDescription>
-              Logo exibida no cabeçalho do painel administrativo
+              Logo exibida na sidebar do painel administrativo
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Logo Tema Claro</Label>
-                <ImageUpload
-                  value={adminLogoUrl}
-                  onChange={(url) => setAdminLogoUrl(url || "")}
-                  folder="admin"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Logo Tema Escuro</Label>
-                <ImageUpload
-                  value={adminLogoDarkUrl}
-                  onChange={(url) => setAdminLogoDarkUrl(url || "")}
-                  folder="admin"
-                />
-              </div>
-            </div>
+          <CardContent>
+            <Label className="mb-2 block">Logo</Label>
+            <ImageUpload
+              value={adminLogoUrl}
+              onChange={(url) => setAdminLogoUrl(url || "")}
+              folder="admin"
+            />
           </CardContent>
         </Card>
 
@@ -117,25 +102,23 @@ export default function ConfiguracoesPage() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Globe className="h-5 w-5 text-slate-600" />
-              <CardTitle>Favicon</CardTitle>
+              <CardTitle>Favicon do Admin</CardTitle>
             </div>
             <CardDescription>
-              Ícone que aparece na aba do navegador (recomendado: 32x32px ou 64x64px)
+              Ícone que aparece na aba do navegador (recomendado: 32x32px)
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="max-w-xs">
-              <ImageUpload
-                value={adminFaviconUrl}
-                onChange={(url) => setAdminFaviconUrl(url || "")}
-                folder="admin"
-              />
-            </div>
+            <ImageUpload
+              value={adminFaviconUrl}
+              onChange={(url) => setAdminFaviconUrl(url || "")}
+              folder="admin"
+            />
           </CardContent>
         </Card>
       </div>
 
-      <div className="flex justify-end">
+      <div className="max-w-2xl">
         <Button onClick={handleSave} disabled={saving}>
           {saving ? (
             <>

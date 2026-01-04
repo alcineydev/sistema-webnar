@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useSearchParams, useRouter } from "next/navigation"
 import { LeadAuth } from "@/components/webinar/lead-auth"
+import { DynamicFavicon } from "@/components/webinar/dynamic-favicon"
 import { Loader2 } from "lucide-react"
 
 interface Webinar {
@@ -13,6 +14,7 @@ interface Webinar {
   logoUrl: string | null
   logoLightUrl: string | null
   logoDarkUrl: string | null
+  faviconUrl: string | null
   loginBgType: string | null
   loginBgImage: string | null
   loginBgCode: string | null
@@ -99,26 +101,34 @@ export default function WebinarEntryPage() {
   // Loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
-      </div>
+      <>
+        <DynamicFavicon faviconUrl={webinar?.faviconUrl || null} />
+        <div className="min-h-screen bg-black flex items-center justify-center">
+          <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
+        </div>
+      </>
     )
   }
 
   // Erro
   if (error || !webinar) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">{error || "Webinar não encontrado"}</p>
+      <>
+        <DynamicFavicon faviconUrl={webinar?.faviconUrl || null} />
+        <div className="min-h-screen bg-black flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-500 mb-4">{error || "Webinar não encontrado"}</p>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
   // Mostrar tela de login/cadastro
   return (
-    <LeadAuth
+    <>
+      <DynamicFavicon faviconUrl={webinar.faviconUrl} />
+      <LeadAuth
       webinarId={webinar.id}
       webinarSlug={webinar.slug}
       webinarName={webinar.name}
@@ -137,5 +147,6 @@ export default function WebinarEntryPage() {
         }
       }}
     />
+    </>
   )
 }

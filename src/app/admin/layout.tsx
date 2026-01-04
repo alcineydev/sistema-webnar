@@ -1,6 +1,10 @@
 import { Metadata } from "next"
+import { redirect } from "next/navigation"
+import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { AdminLayoutClient } from "@/components/admin/admin-layout-client"
+import { Sidebar } from "@/components/admin/sidebar"
+
+export const dynamic = "force-dynamic"
 
 export async function generateMetadata(): Promise<Metadata> {
   let faviconUrl = null
@@ -22,17 +26,29 @@ export async function generateMetadata(): Promise<Metadata> {
     metadata.icons = {
       icon: faviconUrl,
       shortcut: faviconUrl,
-      apple: faviconUrl,
     }
   }
 
   return metadata
 }
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return <AdminLayoutClient>{children}</AdminLayoutClient>
+  const session = await auth()
+
+  if (!session?.user) {
+    redirect("/admin/login")
+  }
+
+  return (
+    <div className="flex h-screen bg-slate-50">
+      <Sidebar />
+      <main className="flex-1 overflow-y-auto">
+        {children}
+      </main>
+    </div>
+  )
 }

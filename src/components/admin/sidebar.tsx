@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { useTheme } from "next-themes"
 import {
   LayoutDashboard,
   Video,
@@ -17,28 +16,22 @@ import {
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { resolvedTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
-
     async function loadLogo() {
       try {
         const response = await fetch("/api/admin/settings")
         const data = await response.json()
-
-        const isDark = resolvedTheme === "dark"
-        setLogoUrl(isDark ? (data.adminLogoDarkUrl || data.adminLogoUrl) : (data.adminLogoUrl || data.adminLogoDarkUrl))
+        setLogoUrl(data.adminLogoUrl || null)
       } catch (error) {
         console.error("Error loading logo:", error)
       }
     }
 
     loadLogo()
-  }, [resolvedTheme])
+  }, [])
 
   const menuItems = [
     { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -79,21 +72,16 @@ export function Sidebar() {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-slate-100">
-            {mounted && logoUrl ? (
+            {logoUrl ? (
               <img
                 src={logoUrl}
                 alt="Logo"
                 className="h-8 w-auto object-contain"
               />
             ) : (
-              <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600">
-                  <Video className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xl font-bold text-slate-900">
-                  Sistema Webinar
-                </span>
-              </div>
+              <h1 className="text-xl font-bold text-slate-900">
+                Sistema Webinar
+              </h1>
             )}
           </div>
 
