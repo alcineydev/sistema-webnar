@@ -6,41 +6,51 @@ export function AdminFavicon() {
   const [faviconUrl, setFaviconUrl] = useState<string | null>(null)
 
   useEffect(() => {
+    let isMounted = true
+
     async function loadFavicon() {
       try {
         const response = await fetch("/api/admin/settings")
+        if (!response.ok) return
+
         const data = await response.json()
-        setFaviconUrl(data.adminFaviconUrl || null)
-      } catch (error) {
-        console.error("Error loading favicon:", error)
+        if (isMounted && data.adminFaviconUrl) {
+          setFaviconUrl(data.adminFaviconUrl)
+        }
+      } catch {
+        // Silenciar erro - favicon é opcional
       }
     }
 
     loadFavicon()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   useEffect(() => {
     if (!faviconUrl) return
 
-    // Remover favicons existentes
-    const existingLinks = document.querySelectorAll("link[rel*='icon']")
-    existingLinks.forEach(link => link.remove())
+    // Usar uma abordagem mais segura - apenas atualizar href dos links existentes
+    // ou criar novos se não existirem
+    let iconLink = document.querySelector("link[rel='icon']") as HTMLLinkElement
+    let shortcutLink = document.querySelector("link[rel='shortcut icon']") as HTMLLinkElement
 
-    // Adicionar novo favicon
-    const link = document.createElement("link")
-    link.rel = "icon"
-    link.href = faviconUrl
-    document.head.appendChild(link)
-
-    const shortcut = document.createElement("link")
-    shortcut.rel = "shortcut icon"
-    shortcut.href = faviconUrl
-    document.head.appendChild(shortcut)
-
-    return () => {
-      link.remove()
-      shortcut.remove()
+    if (!iconLink) {
+      iconLink = document.createElement("link")
+      iconLink.rel = "icon"
+      document.head.appendChild(iconLink)
     }
+    iconLink.href = faviconUrl
+
+    if (!shortcutLink) {
+      shortcutLink = document.createElement("link")
+      shortcutLink.rel = "shortcut icon"
+      document.head.appendChild(shortcutLink)
+    }
+    shortcutLink.href = faviconUrl
+
   }, [faviconUrl])
 
   return null
