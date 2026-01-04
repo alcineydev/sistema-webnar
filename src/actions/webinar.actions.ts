@@ -41,6 +41,7 @@ export async function getWebinarById(id: string) {
           releaseAt: true,
           isActive: true,
           order: true,
+          offerUrl: true,
         },
       },
       _count: { select: { leads: true } },

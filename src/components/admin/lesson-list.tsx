@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { Lesson } from "@prisma/client"
 import { Button } from "@/components/ui/button"
 import { deleteLesson } from "@/actions/lesson.actions"
 import {
@@ -18,8 +17,22 @@ import {
 import Link from "next/link"
 import Image from "next/image"
 
+interface LessonItem {
+  id: string
+  title: string
+  slug: string
+  description: string | null
+  videoUrl: string
+  videoDuration: number | null
+  thumbnailUrl: string | null
+  releaseAt: Date | null
+  isActive: boolean
+  order: number
+  offerUrl?: string | null
+}
+
 interface LessonListProps {
-  lessons: Lesson[]
+  lessons: LessonItem[]
   webinarId: string
 }
 
