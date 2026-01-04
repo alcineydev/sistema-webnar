@@ -62,6 +62,13 @@ export async function createWebinar(data: FormData) {
     offerUrl: data.get("offerUrl") as string || undefined,
     offerButtonText: data.get("offerButtonText") as string || "Quero Aproveitar",
     urgencyMessage: data.get("urgencyMessage") as string || undefined,
+    // Personalização visual
+    logoLightUrl: data.get("logoLightUrl") as string || null,
+    logoDarkUrl: data.get("logoDarkUrl") as string || null,
+    faviconUrl: data.get("faviconUrl") as string || null,
+    loginBgType: data.get("loginBgType") as string || "code",
+    loginBgImage: data.get("loginBgImage") as string || null,
+    loginBgCode: data.get("loginBgCode") as string || null,
   }
 
   const validated = createWebinarSchema.parse(formData)
@@ -98,6 +105,13 @@ export async function updateWebinar(id: string, data: FormData) {
     offerUrl: data.get("offerUrl") as string || undefined,
     offerButtonText: data.get("offerButtonText") as string || "Quero Aproveitar",
     urgencyMessage: data.get("urgencyMessage") as string || undefined,
+    // Personalização visual
+    logoLightUrl: data.get("logoLightUrl") as string || null,
+    logoDarkUrl: data.get("logoDarkUrl") as string || null,
+    faviconUrl: data.get("faviconUrl") as string || null,
+    loginBgType: data.get("loginBgType") as string || "code",
+    loginBgImage: data.get("loginBgImage") as string || null,
+    loginBgCode: data.get("loginBgCode") as string || null,
   }
 
   const validated = updateWebinarSchema.parse(formData)

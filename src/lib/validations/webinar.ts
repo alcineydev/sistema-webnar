@@ -9,6 +9,13 @@ export const createWebinarSchema = z.object({
   offerUrl: z.string().url("URL inválida").optional().or(z.literal("")),
   offerButtonText: z.string().optional().default("Quero Aproveitar"),
   urgencyMessage: z.string().optional(),
+  // Personalização visual
+  logoLightUrl: z.string().url().optional().nullable().or(z.literal("")),
+  logoDarkUrl: z.string().url().optional().nullable().or(z.literal("")),
+  faviconUrl: z.string().url().optional().nullable().or(z.literal("")),
+  loginBgType: z.enum(["code", "image", "gif"]).optional().default("code"),
+  loginBgImage: z.string().url().optional().nullable().or(z.literal("")),
+  loginBgCode: z.string().optional().nullable().or(z.literal("")),
 })
 
 export const updateWebinarSchema = createWebinarSchema.partial()

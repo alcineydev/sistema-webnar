@@ -1,6 +1,6 @@
 "use client"
 
-import { useTransition } from "react"
+import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 import { createWebinar, updateWebinar } from "@/actions/webinar.actions"
+import { ImageUpload } from "@/components/admin/image-upload"
 
 interface Webinar {
   id: string
@@ -24,6 +25,12 @@ interface Webinar {
   description?: string | null
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED"
   primaryColor?: string | null
+  logoLightUrl?: string | null
+  logoDarkUrl?: string | null
+  faviconUrl?: string | null
+  loginBgType?: string | null
+  loginBgImage?: string | null
+  loginBgCode?: string | null
 }
 
 interface WebinarFormProps {
@@ -34,6 +41,14 @@ export function WebinarForm({ webinar }: WebinarFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const isEditing = !!webinar
+
+  // Estados para personalização visual
+  const [logoLightUrl, setLogoLightUrl] = useState(webinar?.logoLightUrl || "")
+  const [logoDarkUrl, setLogoDarkUrl] = useState(webinar?.logoDarkUrl || "")
+  const [faviconUrl, setFaviconUrl] = useState(webinar?.faviconUrl || "")
+  const [loginBgType, setLoginBgType] = useState(webinar?.loginBgType || "code")
+  const [loginBgImage, setLoginBgImage] = useState(webinar?.loginBgImage || "")
+  const [loginBgCode, setLoginBgCode] = useState(webinar?.loginBgCode || "")
 
   const handleSubmit = async (formData: FormData) => {
     startTransition(async () => {
@@ -60,6 +75,14 @@ export function WebinarForm({ webinar }: WebinarFormProps) {
 
   return (
     <form action={handleSubmit}>
+      {/* Hidden inputs para campos de personalização visual */}
+      <input type="hidden" name="logoLightUrl" value={logoLightUrl} />
+      <input type="hidden" name="logoDarkUrl" value={logoDarkUrl} />
+      <input type="hidden" name="faviconUrl" value={faviconUrl} />
+      <input type="hidden" name="loginBgType" value={loginBgType} />
+      <input type="hidden" name="loginBgImage" value={loginBgImage} />
+      <input type="hidden" name="loginBgCode" value={loginBgCode} />
+
       <div className="space-y-6">
         <Card>
           <CardHeader>
@@ -157,9 +180,110 @@ export function WebinarForm({ webinar }: WebinarFormProps) {
           </CardContent>
         </Card>
 
+        {/* Logos por Tema */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Logos</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Logo Tema Claro</Label>
+                <p className="text-xs text-slate-500">Usada quando o tema claro está ativo</p>
+                <ImageUpload
+                  value={logoLightUrl}
+                  onChange={(url) => setLogoLightUrl(url || "")}
+                  folder="logos"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Logo Tema Escuro</Label>
+                <p className="text-xs text-slate-500">Usada quando o tema escuro está ativo</p>
+                <ImageUpload
+                  value={logoDarkUrl}
+                  onChange={(url) => setLogoDarkUrl(url || "")}
+                  folder="logos"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Favicon</Label>
+              <p className="text-xs text-slate-500">Ícone que aparece na aba do navegador (recomendado: 32x32px)</p>
+              <ImageUpload
+                value={faviconUrl}
+                onChange={(url) => setFaviconUrl(url || "")}
+                folder="favicons"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Background da Tela de Login */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Tela de Login</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-slate-500">Configure o visual da tela de login/cadastro dos leads</p>
+
+            <div className="space-y-2">
+              <Label>Tipo de Background</Label>
+              <select
+                value={loginBgType}
+                onChange={(e) => setLoginBgType(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-lg"
+              >
+                <option value="code">Código HTML/CSS/JS (Animação)</option>
+                <option value="image">Imagem</option>
+                <option value="gif">GIF Animado</option>
+              </select>
+            </div>
+
+            {loginBgType === "image" && (
+              <div className="space-y-2">
+                <Label>Imagem de Fundo</Label>
+                <ImageUpload
+                  value={loginBgImage}
+                  onChange={(url) => setLoginBgImage(url || "")}
+                  folder="backgrounds"
+                />
+              </div>
+            )}
+
+            {loginBgType === "gif" && (
+              <div className="space-y-2">
+                <Label>GIF de Fundo</Label>
+                <ImageUpload
+                  value={loginBgImage}
+                  onChange={(url) => setLoginBgImage(url || "")}
+                  folder="backgrounds"
+                />
+                <p className="text-xs text-slate-500">Faça upload de um GIF animado</p>
+              </div>
+            )}
+
+            {loginBgType === "code" && (
+              <div className="space-y-2">
+                <Label>Código HTML/CSS/JS</Label>
+                <textarea
+                  value={loginBgCode}
+                  onChange={(e) => setLoginBgCode(e.target.value)}
+                  className="w-full h-64 p-3 font-mono text-sm border border-slate-300 rounded-lg"
+                  placeholder="<style>...</style><div>...</div>"
+                />
+                <p className="text-xs text-slate-500">
+                  Deixe vazio para usar o background padrão com partículas e efeitos
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <p className="text-sm text-amber-800">
-            💡 <strong>Dica:</strong> As ofertas agora são configuradas individualmente em cada aula.
+            <strong>Dica:</strong> As ofertas agora são configuradas individualmente em cada aula.
             Acesse a aba Aulas para configurar ofertas específicas por aula.
           </p>
         </div>

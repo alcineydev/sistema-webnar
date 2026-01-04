@@ -46,6 +46,19 @@ model Webinar {
   releaseType     ReleaseType    @default(IMMEDIATE)
   activeCampaignListId  String?
   n8nWebhookUrl         String?
+
+  // Logos por tema
+  logoLightUrl      String?   // Logo para tema claro
+  logoDarkUrl       String?   // Logo para tema escuro
+
+  // Favicon
+  faviconUrl        String?
+
+  // Background da tela de login
+  loginBgType       String?   @default("code") // "image", "gif", "code"
+  loginBgImage      String?   // URL da imagem ou GIF
+  loginBgCode       String?   @db.Text // Código HTML/CSS/JS
+
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   createdById     String
