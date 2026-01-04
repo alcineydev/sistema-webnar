@@ -183,10 +183,10 @@ function SortableLesson({
         {openMenuId === lesson.id && (
           <>
             <div
-              className="fixed inset-0 z-10"
+              className="fixed inset-0 z-40"
               onClick={() => setOpenMenuId(null)}
             />
-            <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-20">
+            <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
               <Link
                 href={`/admin/webinars/${webinarId}/aulas/${lesson.id}`}
                 className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
@@ -311,7 +311,7 @@ export function LessonList({ lessons: initialLessons, webinarId }: LessonListPro
       )}
 
       {/* Lista de aulas com drag and drop */}
-      <div className="bg-white rounded-lg border border-slate-200 divide-y divide-slate-100 overflow-hidden">
+      <div className="bg-white rounded-lg border border-slate-200 divide-y divide-slate-100">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
