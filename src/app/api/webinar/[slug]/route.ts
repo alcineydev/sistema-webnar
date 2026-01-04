@@ -24,7 +24,6 @@ export async function GET(
         logoUrl: true,
         bannerUrl: true,
         primaryColor: true,
-        releaseType: true,
         lessons: {
           where: { isActive: true },
           orderBy: { order: "asc" },
@@ -46,7 +45,6 @@ export async function GET(
       logoUrl: webinar.logoUrl,
       bannerUrl: webinar.bannerUrl,
       primaryColor: webinar.primaryColor,
-      releaseType: webinar.releaseType,
       firstLessonSlug: webinar.lessons[0]?.slug || null
     })
   } catch (error) {

@@ -5,7 +5,6 @@ export const createWebinarSchema = z.object({
   slug: z.string().min(3, "Slug deve ter pelo menos 3 caracteres").regex(/^[a-z0-9-]+$/, "Slug deve conter apenas letras minúsculas, números e hífens"),
   description: z.string().optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).default("DRAFT"),
-  releaseType: z.enum(["IMMEDIATE", "SCHEDULED", "SEQUENTIAL"]).default("IMMEDIATE"),
   primaryColor: z.string().optional().default("#6366f1"),
   offerUrl: z.string().url("URL inválida").optional().or(z.literal("")),
   offerButtonText: z.string().optional().default("Quero Aproveitar"),
