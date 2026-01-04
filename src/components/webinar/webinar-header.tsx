@@ -12,7 +12,7 @@ interface WebinarHeaderProps {
 
 export function WebinarHeader({ webinarName, webinarSlug, logoUrl }: WebinarHeaderProps) {
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-800 bg-black/90 backdrop-blur-sm dark:border-zinc-800 dark:bg-black/90">
+    <header className="sticky top-0 z-50 border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-black/90 backdrop-blur-sm">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <Link href={`/w/${webinarSlug}`} className="flex items-center gap-3">
           {logoUrl ? (
@@ -23,7 +23,7 @@ export function WebinarHeader({ webinarName, webinarSlug, logoUrl }: WebinarHead
             </div>
           )}
           <div>
-            <span className="font-semibold text-white block">{webinarName}</span>
+            <span className="font-semibold text-zinc-900 dark:text-white block">{webinarName}</span>
             <span className="text-xs text-zinc-500">Área do Aluno</span>
           </div>
         </Link>

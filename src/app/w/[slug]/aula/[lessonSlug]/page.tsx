@@ -220,7 +220,7 @@ export default function LessonPage() {
   // Loading
   if (loading || checkingLead) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
       </div>
     )
@@ -229,7 +229,7 @@ export default function LessonPage() {
   // Erro
   if (error || !lesson) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 mb-4">{error || "Aula não encontrada"}</p>
           <Link href={`/w/${slug}`}>
@@ -255,7 +255,7 @@ export default function LessonPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-white dark:bg-black">
       <WebinarHeader
         webinarName={lesson.webinar.name}
         webinarSlug={lesson.webinar.slug}
@@ -264,8 +264,8 @@ export default function LessonPage() {
 
       <main className="container mx-auto px-4 py-6">
         {/* Saudação personalizada */}
-        <p className="text-zinc-400 mb-4">
-          Olá, <span className="text-indigo-400 font-medium">{lead.name.split(" ")[0]}</span>! 👋
+        <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+          Olá, <span className="text-indigo-600 dark:text-indigo-400 font-medium">{lead.name.split(" ")[0]}</span>! 👋
         </p>
 
         <div className="flex flex-col lg:flex-row gap-6">
@@ -311,20 +311,22 @@ export default function LessonPage() {
 
             {/* Título e descrição */}
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-white mb-4">{lesson.title}</h1>
+              <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-4">{lesson.title}</h1>
               {lesson.description && (
-                <div className="bg-zinc-900 rounded-lg p-4 border border-zinc-800">
+                <div className="bg-zinc-100 dark:bg-zinc-900 rounded-lg p-4 border border-zinc-200 dark:border-zinc-800">
                   <div
-                    className={`prose prose-invert prose-sm max-w-none ${
+                    className={`prose dark:prose-invert prose-sm max-w-none prose-a:text-indigo-600 dark:prose-a:text-indigo-400 prose-a:hover:text-indigo-500 dark:prose-a:hover:text-indigo-300 ${
                       !showFullDescription ? "line-clamp-3" : ""
                     }`}
                     dangerouslySetInnerHTML={{
-                      __html: lesson.description
-                        .replace(/\n/g, '<br/>')
-                        .replace(
-                          /(https?:\/\/[^\s<]+)/g,
-                          '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:text-indigo-300 underline">$1</a>'
-                        )
+                      __html: lesson.description.startsWith("<")
+                        ? lesson.description
+                        : lesson.description
+                            .replace(/\n/g, "<br/>")
+                            .replace(
+                              /(https?:\/\/[^\s<]+)/g,
+                              '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+                            )
                     }}
                   />
                   {lesson.description.length > 200 && (
@@ -342,8 +344,8 @@ export default function LessonPage() {
 
           {/* Sidebar - Lista de aulas */}
           <div className="lg:w-80 flex-shrink-0">
-            <div className="bg-zinc-900 rounded-xl p-4 sticky top-24">
-              <h3 className="text-white font-semibold mb-4">Aulas</h3>
+            <div className="bg-zinc-100 dark:bg-zinc-900 rounded-xl p-4 sticky top-24">
+              <h3 className="text-zinc-900 dark:text-white font-semibold mb-4">Aulas</h3>
               <div className="space-y-2 max-h-[60vh] overflow-y-auto">
                 {lesson.allLessons.map((l, index) => {
                   const isCurrent = l.slug === lessonSlug
@@ -361,10 +363,10 @@ export default function LessonPage() {
                           <div className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
                             isCurrent
                               ? "bg-indigo-600/20 border border-indigo-600/50"
-                              : "hover:bg-zinc-800"
+                              : "hover:bg-zinc-200 dark:hover:bg-zinc-800"
                           }`}>
                             {/* Thumbnail */}
-                            <div className="relative w-28 h-16 flex-shrink-0 rounded overflow-hidden bg-zinc-800">
+                            <div className="relative w-28 h-16 flex-shrink-0 rounded overflow-hidden bg-zinc-200 dark:bg-zinc-800">
                               {l.thumbnailUrl ? (
                                 <img
                                   src={l.thumbnailUrl}
@@ -373,7 +375,7 @@ export default function LessonPage() {
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                  <Video className="h-6 w-6 text-zinc-600" />
+                                  <Video className="h-6 w-6 text-zinc-400 dark:text-zinc-600" />
                                 </div>
                               )}
                               {isCurrent && (
@@ -387,7 +389,7 @@ export default function LessonPage() {
                             <div className="flex-1 min-w-0">
                               <p className="text-xs text-zinc-500 mb-1">Aula {index + 1}</p>
                               <p className={`text-sm font-medium truncate ${
-                                isCurrent ? "text-indigo-400" : "text-white"
+                                isCurrent ? "text-indigo-600 dark:text-indigo-400" : "text-zinc-900 dark:text-white"
                               }`}>
                                 {l.title}
                               </p>
@@ -395,9 +397,9 @@ export default function LessonPage() {
                           </div>
                         </Link>
                       ) : (
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50">
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-200/50 dark:bg-zinc-800/50">
                           {/* Thumbnail locked */}
-                          <div className="relative w-28 h-16 flex-shrink-0 rounded overflow-hidden bg-zinc-800 grayscale">
+                          <div className="relative w-28 h-16 flex-shrink-0 rounded overflow-hidden bg-zinc-200 dark:bg-zinc-800 grayscale">
                             {l.thumbnailUrl ? (
                               <img
                                 src={l.thumbnailUrl}
@@ -406,7 +408,7 @@ export default function LessonPage() {
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <Video className="h-6 w-6 text-zinc-600" />
+                                <Video className="h-6 w-6 text-zinc-400 dark:text-zinc-600" />
                               </div>
                             )}
                             <div className="absolute inset-0 bg-black/60 flex items-center justify-center">

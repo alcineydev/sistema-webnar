@@ -1,16 +1,16 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useTransition, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, Gift } from "lucide-react"
 import { createLesson, updateLesson } from "@/actions/lesson.actions"
 import { ImageUpload } from "@/components/admin/image-upload"
+import { RichTextEditor } from "@/components/admin/rich-text-editor"
 
 interface Lesson {
   id: string
@@ -39,8 +39,12 @@ export function LessonForm({ webinarId, lesson }: LessonFormProps) {
   const isEditing = !!lesson
   const [hasOffer, setHasOffer] = useState(!!lesson?.offerUrl)
   const [releaseType, setReleaseType] = useState(lesson?.releaseType || "immediate")
+  const descriptionRef = useRef<string>(lesson?.description || "")
 
   const handleSubmit = async (formData: FormData) => {
+    // Adicionar descrição do editor rico
+    formData.set("description", descriptionRef.current)
+
     // Se não tem oferta, limpar campos
     if (!hasOffer) {
       formData.set("offerUrl", "")
@@ -114,13 +118,13 @@ export function LessonForm({ webinarId, lesson }: LessonFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Descrição</Label>
-              <Textarea
-                id="description"
-                name="description"
-                defaultValue={lesson?.description || ""}
+              <Label>Descrição</Label>
+              <RichTextEditor
+                value={lesson?.description || ""}
+                onChange={(value) => {
+                  descriptionRef.current = value
+                }}
                 placeholder="Descreva o conteúdo da aula..."
-                rows={3}
               />
             </div>
 
