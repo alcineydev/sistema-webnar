@@ -14,23 +14,33 @@ import {
   X
 } from "lucide-react"
 
+interface AdminSettings {
+  adminLogoType?: string
+  adminLogoUrl?: string
+  adminLogoHeight?: string
+  adminLogoText?: string
+}
+
 export function Sidebar() {
   const pathname = usePathname()
-  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [settings, setSettings] = useState<AdminSettings>({})
   const [isOpen, setIsOpen] = useState(false)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    async function loadLogo() {
+    async function loadSettings() {
       try {
         const response = await fetch("/api/admin/settings")
         const data = await response.json()
-        setLogoUrl(data.adminLogoUrl || null)
+        setSettings(data)
       } catch (error) {
-        console.error("Error loading logo:", error)
+        console.error("Error loading settings:", error)
+      } finally {
+        setLoaded(true)
       }
     }
 
-    loadLogo()
+    loadSettings()
   }, [])
 
   const menuItems = [
@@ -44,6 +54,11 @@ export function Sidebar() {
     if (href === "/admin") return pathname === "/admin"
     return pathname.startsWith(href)
   }
+
+  const logoType = settings.adminLogoType || "text"
+  const logoUrl = settings.adminLogoUrl
+  const logoHeight = settings.adminLogoHeight || "32"
+  const logoText = settings.adminLogoText || "Sistema Webinar"
 
   return (
     <>
@@ -70,17 +85,18 @@ export function Sidebar() {
         }`}
       >
         <div className="flex flex-col h-full">
-          {/* Logo */}
+          {/* Logo/Texto */}
           <div className="p-6 border-b border-slate-100">
-            {logoUrl ? (
+            {loaded && logoType === "logo" && logoUrl ? (
               <img
                 src={logoUrl}
                 alt="Logo"
-                className="h-8 w-auto object-contain"
+                style={{ height: `${logoHeight}px` }}
+                className="object-contain"
               />
             ) : (
               <h1 className="text-xl font-bold text-slate-900">
-                Sistema Webinar
+                {logoText}
               </h1>
             )}
           </div>
