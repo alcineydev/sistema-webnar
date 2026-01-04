@@ -11,6 +11,11 @@ interface Webinar {
   slug: string
   description: string | null
   logoUrl: string | null
+  logoLightUrl: string | null
+  logoDarkUrl: string | null
+  loginBgType: string | null
+  loginBgImage: string | null
+  loginBgCode: string | null
   firstLessonSlug: string | null
 }
 
@@ -119,6 +124,11 @@ export default function WebinarEntryPage() {
       webinarName={webinar.name}
       webinarDescription={webinar.description}
       logoUrl={webinar.logoUrl}
+      logoLightUrl={webinar.logoLightUrl}
+      logoDarkUrl={webinar.logoDarkUrl}
+      loginBgType={webinar.loginBgType}
+      loginBgImage={webinar.loginBgImage}
+      loginBgCode={webinar.loginBgCode}
       initialToken={token}
       onSuccess={(newLead) => {
         setLead(newLead)

@@ -54,6 +54,8 @@ interface LessonData {
     slug: string
     description: string | null
     logoUrl: string | null
+    logoLightUrl: string | null
+    logoDarkUrl: string | null
     primaryColor: string | null
   }
   allLessons: Lesson[]
@@ -259,6 +261,8 @@ export default function LessonPage() {
         webinarName={lesson.webinar.name}
         webinarDescription={lesson.webinar.description}
         logoUrl={lesson.webinar.logoUrl}
+        logoLightUrl={lesson.webinar.logoLightUrl}
+        logoDarkUrl={lesson.webinar.logoDarkUrl}
         onSuccess={(newLead) => setLead(newLead)}
       />
     )
@@ -272,6 +276,8 @@ export default function LessonPage() {
         webinarName={lesson.webinar.name}
         webinarSlug={lesson.webinar.slug}
         logoUrl={lesson.webinar.logoUrl}
+        logoLightUrl={lesson.webinar.logoLightUrl}
+        logoDarkUrl={lesson.webinar.logoDarkUrl}
       />
 
       <main className="container mx-auto px-4 py-6">

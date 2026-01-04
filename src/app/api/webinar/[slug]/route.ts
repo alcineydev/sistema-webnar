@@ -22,8 +22,14 @@ export async function GET(
         slug: true,
         description: true,
         logoUrl: true,
+        logoLightUrl: true,
+        logoDarkUrl: true,
+        faviconUrl: true,
         bannerUrl: true,
         primaryColor: true,
+        loginBgType: true,
+        loginBgImage: true,
+        loginBgCode: true,
         lessons: {
           where: { isActive: true },
           orderBy: { order: "asc" },
@@ -43,8 +49,14 @@ export async function GET(
       slug: webinar.slug,
       description: webinar.description,
       logoUrl: webinar.logoUrl,
+      logoLightUrl: webinar.logoLightUrl,
+      logoDarkUrl: webinar.logoDarkUrl,
+      faviconUrl: webinar.faviconUrl,
       bannerUrl: webinar.bannerUrl,
       primaryColor: webinar.primaryColor,
+      loginBgType: webinar.loginBgType,
+      loginBgImage: webinar.loginBgImage,
+      loginBgCode: webinar.loginBgCode,
       firstLessonSlug: webinar.lessons[0]?.slug || null
     })
   } catch (error) {

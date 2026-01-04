@@ -23,6 +23,8 @@ export async function GET(
         slug: true,
         description: true,
         logoUrl: true,
+        logoLightUrl: true,
+        logoDarkUrl: true,
         primaryColor: true,
         lessons: {
           where: { isActive: true },
@@ -103,6 +105,8 @@ export async function GET(
         slug: webinar.slug,
         description: webinar.description,
         logoUrl: webinar.logoUrl,
+        logoLightUrl: webinar.logoLightUrl,
+        logoDarkUrl: webinar.logoDarkUrl,
         primaryColor: webinar.primaryColor
       },
       allLessons
