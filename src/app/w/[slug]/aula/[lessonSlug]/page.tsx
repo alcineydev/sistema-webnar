@@ -15,6 +15,15 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
+// Helper para ajustar cor (escurecer/clarear)
+function adjustColor(color: string, amount: number): string {
+  const hex = color.replace("#", "")
+  const r = Math.max(0, Math.min(255, parseInt(hex.slice(0, 2), 16) + amount))
+  const g = Math.max(0, Math.min(255, parseInt(hex.slice(2, 4), 16) + amount))
+  const b = Math.max(0, Math.min(255, parseInt(hex.slice(4, 6), 16) + amount))
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`
+}
+
 interface Lesson {
   id: string
   title: string
@@ -45,6 +54,7 @@ interface LessonData {
     slug: string
     description: string | null
     logoUrl: string | null
+    primaryColor: string | null
   }
   allLessons: Lesson[]
 }
@@ -254,6 +264,8 @@ export default function LessonPage() {
     )
   }
 
+  const primaryColor = lesson.webinar.primaryColor || "#6366f1"
+
   return (
     <div className="min-h-screen bg-white dark:bg-black">
       <WebinarHeader
@@ -265,7 +277,7 @@ export default function LessonPage() {
       <main className="container mx-auto px-4 py-6">
         {/* Saudação personalizada */}
         <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-          Olá, <span className="text-indigo-600 dark:text-indigo-400 font-medium">{lead.name.split(" ")[0]}</span>! 👋
+          Olá, <span className="font-medium" style={{ color: primaryColor }}>{lead.name.split(" ")[0]}</span>! 👋
         </p>
 
         <div className="flex flex-col lg:flex-row gap-6">
@@ -275,6 +287,7 @@ export default function LessonPage() {
             <div className="mb-6 w-full">
               <YouTubePlayer
                 videoUrl={lesson.videoUrl}
+                primaryColor={primaryColor}
                 onEnded={handleVideoEnded}
                 onTimeUpdate={trackProgress}
                 onPlay={handlePlay}
@@ -284,7 +297,12 @@ export default function LessonPage() {
 
             {/* Oferta */}
             {showOffer && lesson.offerUrl && (
-              <div className="mb-6 p-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div
+                className="mb-6 p-6 rounded-xl text-white animate-in fade-in slide-in-from-bottom-4 duration-500"
+                style={{
+                  background: `linear-gradient(to right, ${primaryColor}, ${adjustColor(primaryColor, 40)})`
+                }}
+              >
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="flex items-center gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20">
@@ -301,7 +319,11 @@ export default function LessonPage() {
                     rel="noopener noreferrer"
                     onClick={handleOfferClick}
                   >
-                    <Button size="lg" className="bg-white text-indigo-600 hover:bg-zinc-100">
+                    <Button
+                      size="lg"
+                      className="hover:opacity-90"
+                      style={{ backgroundColor: "white", color: primaryColor }}
+                    >
                       {lesson.offerButtonText || "Quero Aproveitar"}
                     </Button>
                   </a>
@@ -332,7 +354,8 @@ export default function LessonPage() {
                   {lesson.description.length > 200 && (
                     <button
                       onClick={() => setShowFullDescription(!showFullDescription)}
-                      className="mt-3 text-sm text-indigo-400 hover:text-indigo-300 font-medium"
+                      className="mt-3 text-sm font-medium hover:opacity-80"
+                      style={{ color: primaryColor }}
                     >
                       {showFullDescription ? "Ver menos ▲" : "Ver mais ▼"}
                     </button>
@@ -360,11 +383,15 @@ export default function LessonPage() {
                     >
                       {!isLocked ? (
                         <Link href={`/w/${slug}/aula/${l.slug}`}>
-                          <div className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                            isCurrent
-                              ? "bg-indigo-600/20 border border-indigo-600/50"
-                              : "hover:bg-zinc-200 dark:hover:bg-zinc-800"
-                          }`}>
+                          <div
+                            className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                              isCurrent ? "border" : "hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                            }`}
+                            style={isCurrent ? {
+                              backgroundColor: `${primaryColor}20`,
+                              borderColor: `${primaryColor}50`
+                            } : {}}
+                          >
                             {/* Thumbnail */}
                             <div className="relative w-28 h-16 flex-shrink-0 rounded overflow-hidden bg-zinc-200 dark:bg-zinc-800">
                               {l.thumbnailUrl ? (
@@ -388,9 +415,10 @@ export default function LessonPage() {
                             {/* Info */}
                             <div className="flex-1 min-w-0">
                               <p className="text-xs text-zinc-500 mb-1">Aula {index + 1}</p>
-                              <p className={`text-sm font-medium truncate ${
-                                isCurrent ? "text-indigo-600 dark:text-indigo-400" : "text-zinc-900 dark:text-white"
-                              }`}>
+                              <p
+                                className={`text-sm font-medium truncate ${!isCurrent ? "text-zinc-900 dark:text-white" : ""}`}
+                                style={isCurrent ? { color: primaryColor } : {}}
+                              >
                                 {l.title}
                               </p>
                             </div>

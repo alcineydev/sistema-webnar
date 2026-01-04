@@ -23,6 +23,7 @@ export async function GET(
         slug: true,
         description: true,
         logoUrl: true,
+        primaryColor: true,
         lessons: {
           where: { isActive: true },
           orderBy: { order: "asc" },
@@ -101,7 +102,8 @@ export async function GET(
         name: webinar.name,
         slug: webinar.slug,
         description: webinar.description,
-        logoUrl: webinar.logoUrl
+        logoUrl: webinar.logoUrl,
+        primaryColor: webinar.primaryColor
       },
       allLessons
     })

@@ -23,7 +23,6 @@ interface Webinar {
   slug: string
   description?: string | null
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED"
-  releaseType: "IMMEDIATE" | "SCHEDULED" | "SEQUENTIAL"
   primaryColor?: string | null
 }
 
@@ -122,20 +121,6 @@ export function WebinarForm({ webinar }: WebinarFormProps) {
                     <SelectItem value="DRAFT">Rascunho</SelectItem>
                     <SelectItem value="PUBLISHED">Publicado</SelectItem>
                     <SelectItem value="ARCHIVED">Arquivado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="releaseType">Tipo de Liberação</Label>
-                <Select name="releaseType" defaultValue={webinar?.releaseType || "IMMEDIATE"}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="IMMEDIATE">Imediata</SelectItem>
-                    <SelectItem value="SCHEDULED">Agendada</SelectItem>
-                    <SelectItem value="SEQUENTIAL">Sequencial</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -61,6 +61,7 @@ declare global {
 
 interface YouTubePlayerProps {
   videoUrl: string
+  primaryColor?: string
   onEnded?: () => void
   onTimeUpdate?: (currentTime: number, duration: number) => void
   onPlay?: () => void
@@ -82,6 +83,7 @@ function extractVideoId(url: string): string | null {
 
 export function YouTubePlayer({
   videoUrl,
+  primaryColor = "#6366f1",
   onEnded,
   onTimeUpdate,
   onPlay,
@@ -279,7 +281,7 @@ export function YouTubePlayer({
       {/* Loading overlay */}
       {!isReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
-          <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
+          <Loader2 className="h-12 w-12 animate-spin" style={{ color: primaryColor }} />
         </div>
       )}
 
@@ -295,7 +297,10 @@ export function YouTubePlayer({
           className="absolute inset-0 flex items-center justify-center"
         >
           {!isPlaying && isReady && (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600/90 hover:bg-indigo-600 transition-colors">
+            <div
+              className="flex h-16 w-16 items-center justify-center rounded-full transition-opacity hover:opacity-90"
+              style={{ backgroundColor: primaryColor }}
+            >
               <Play className="h-8 w-8 text-white fill-white ml-1" />
             </div>
           )}
@@ -309,20 +314,30 @@ export function YouTubePlayer({
             onClick={handleSeek}
           >
             <div
-              className="h-full bg-indigo-600 rounded-full relative"
-              style={{ width: `${progress}%` }}
+              className="h-full rounded-full relative"
+              style={{ width: `${progress}%`, backgroundColor: primaryColor }}
             >
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 h-3 w-3 bg-indigo-500 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity" />
+              <div
+                className="absolute right-0 top-1/2 -translate-y-1/2 h-3 w-3 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity"
+                style={{ backgroundColor: primaryColor }}
+              />
             </div>
           </div>
 
           {/* Controles */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button onClick={togglePlay} className="text-white hover:text-indigo-400 transition-colors">
+              <button
+                onClick={togglePlay}
+                className="text-white hover:opacity-80 transition-opacity"
+                style={{ "--hover-color": primaryColor } as React.CSSProperties}
+              >
                 {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
               </button>
-              <button onClick={toggleMute} className="text-white hover:text-indigo-400 transition-colors">
+              <button
+                onClick={toggleMute}
+                className="text-white hover:opacity-80 transition-opacity"
+              >
                 {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
               </button>
               <span className="text-white text-sm">
@@ -330,7 +345,7 @@ export function YouTubePlayer({
               </span>
             </div>
 
-            <button onClick={toggleFullscreen} className="text-white hover:text-indigo-400 transition-colors">
+            <button onClick={toggleFullscreen} className="text-white hover:opacity-80 transition-opacity">
               <Maximize className="h-6 w-6" />
             </button>
           </div>
