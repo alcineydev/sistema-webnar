@@ -286,12 +286,13 @@ export default function LessonPage() {
       <DynamicFavicon faviconUrl={lesson.webinar.faviconUrl} />
       <div className="min-h-screen bg-white dark:bg-black">
         <WebinarHeader
-        webinarName={lesson.webinar.name}
-        webinarSlug={lesson.webinar.slug}
-        logoUrl={lesson.webinar.logoUrl}
-        logoLightUrl={lesson.webinar.logoLightUrl}
-        logoDarkUrl={lesson.webinar.logoDarkUrl}
-      />
+          webinarName={lesson.webinar.name}
+          webinarSlug={lesson.webinar.slug}
+          logoUrl={lesson.webinar.logoUrl}
+          logoLightUrl={lesson.webinar.logoLightUrl}
+          logoDarkUrl={lesson.webinar.logoDarkUrl}
+          leadName={lead?.name}
+        />
 
       <main className="container mx-auto px-4 py-6">
         {/* Saudação personalizada */}
