@@ -4,10 +4,16 @@ import { auth } from "@/lib/auth"
 
 export const dynamic = "force-dynamic"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-)
+function getSupabaseAdminClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY
+
+  if (!supabaseUrl || !serviceKey) {
+    return null
+  }
+
+  return createClient(supabaseUrl, serviceKey)
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,6 +29,12 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: "Nenhum arquivo enviado" }, { status: 400 })
+    }
+
+    const supabase = getSupabaseAdminClient()
+    if (!supabase) {
+      console.error("[Upload API] Missing Supabase env vars")
+      return NextResponse.json({ error: "Upload indisponivel: configuracao ausente" }, { status: 500 })
     }
 
     const fileExt = file.name.split(".").pop()
