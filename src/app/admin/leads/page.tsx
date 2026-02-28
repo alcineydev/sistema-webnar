@@ -1,24 +1,43 @@
+import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
+import { auth } from "@/lib/auth"
 import { Mail, Phone, Eye } from "lucide-react"
 import Link from "next/link"
 
 export const dynamic = "force-dynamic"
 
 export default async function LeadsGlobalPage() {
+  const session = await auth()
+  if (!session?.user?.email) {
+    redirect("/admin/login")
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    select: { id: true },
+  })
+
+  if (!user?.id) {
+    redirect("/admin/login")
+  }
+
   const leads = await prisma.lead.findMany({
+    where: { webinar: { createdById: user.id } },
     orderBy: { createdAt: "desc" },
     take: 100,
     include: {
       webinar: {
-        select: { id: true, name: true, slug: true }
+        select: { id: true, name: true, slug: true },
       },
       _count: {
-        select: { progress: true, events: true }
-      }
-    }
+        select: { progress: true, events: true },
+      },
+    },
   })
 
-  const totalLeads = await prisma.lead.count()
+  const totalLeads = await prisma.lead.count({
+    where: { webinar: { createdById: user.id } },
+  })
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("pt-BR", {
@@ -26,7 +45,7 @@ export default async function LeadsGlobalPage() {
       month: "2-digit",
       year: "numeric",
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
     }).format(new Date(date))
   }
 
@@ -37,7 +56,6 @@ export default async function LeadsGlobalPage() {
         <p className="text-slate-500">{totalLeads} leads cadastrados</p>
       </div>
 
-      {/* Tabela de leads */}
       <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
         <table className="w-full">
           <thead className="bg-slate-50 border-b border-slate-200">
@@ -47,7 +65,7 @@ export default async function LeadsGlobalPage() {
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Contato</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Progresso</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Cadastro</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Ações</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Acoes</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -60,10 +78,7 @@ export default async function LeadsGlobalPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <Link
-                    href={`/admin/webinars/${lead.webinar.id}`}
-                    className="text-sm text-indigo-600 hover:text-indigo-800"
-                  >
+                  <Link href={`/admin/webinars/${lead.webinar.id}`} className="text-sm text-indigo-600 hover:text-indigo-800">
                     {lead.webinar.name}
                   </Link>
                 </td>
@@ -86,9 +101,7 @@ export default async function LeadsGlobalPage() {
                     {lead._count.progress} aulas • {lead._count.events} eventos
                   </span>
                 </td>
-                <td className="px-4 py-3 text-sm text-slate-500">
-                  {formatDate(lead.createdAt)}
-                </td>
+                <td className="px-4 py-3 text-sm text-slate-500">{formatDate(lead.createdAt)}</td>
                 <td className="px-4 py-3">
                   <Link href={`/admin/webinars/${lead.webinar.id}/leads/${lead.id}`}>
                     <button className="p-2 hover:bg-slate-100 rounded">

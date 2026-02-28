@@ -7,14 +7,11 @@ interface RouteParams {
   params: Promise<{ slug: string }>
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const { slug } = await params
 
-    const webinar = await prisma.webinar.findUnique({
+    const webinar = await prisma.webinar.findFirst({
       where: { slug, status: "PUBLISHED" },
       select: {
         id: true,
@@ -29,18 +26,17 @@ export async function GET(
         primaryColor: true,
         loginBgType: true,
         loginBgImage: true,
-        loginBgCode: true,
         lessons: {
           where: { isActive: true },
           orderBy: { order: "asc" },
           take: 1,
-          select: { slug: true }
-        }
-      }
+          select: { slug: true },
+        },
+      },
     })
 
     if (!webinar) {
-      return NextResponse.json({ error: "Webinar não encontrado" }, { status: 404 })
+      return NextResponse.json({ error: "Webinar nao encontrado" }, { status: 404 })
     }
 
     return NextResponse.json({
@@ -56,8 +52,7 @@ export async function GET(
       primaryColor: webinar.primaryColor,
       loginBgType: webinar.loginBgType,
       loginBgImage: webinar.loginBgImage,
-      loginBgCode: webinar.loginBgCode,
-      firstLessonSlug: webinar.lessons[0]?.slug || null
+      firstLessonSlug: webinar.lessons[0]?.slug || null,
     })
   } catch (error) {
     console.error("[Webinar API] Error:", error)

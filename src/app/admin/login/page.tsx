@@ -125,11 +125,6 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
-          <div className="mt-6 pt-6 border-t border-slate-100">
-            <p className="text-center text-xs text-slate-400">
-              Credenciais de teste: admin@webinar.com / admin123
-            </p>
-          </div>
         </div>
         <p className="mt-8 text-center text-sm text-slate-500">
           © 2024 Sistema Webinar. Todos os direitos reservados.

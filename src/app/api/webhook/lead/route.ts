@@ -4,20 +4,21 @@ import crypto from "crypto"
 
 export const dynamic = "force-dynamic"
 
-// Gerar token único
 function generateToken(): string {
   return crypto.randomBytes(32).toString("hex")
 }
 
-// POST - Receber lead do N8N
 export async function POST(request: NextRequest) {
   try {
-    // Verificar API Key (opcional, para segurança)
-    const apiKey = request.headers.get("x-api-key")
     const expectedKey = process.env.WEBHOOK_API_KEY
+    if (!expectedKey) {
+      console.error("[Webhook Lead] WEBHOOK_API_KEY nao configurada")
+      return NextResponse.json({ error: "Webhook indisponivel" }, { status: 500 })
+    }
 
-    if (expectedKey && apiKey !== expectedKey) {
-      return NextResponse.json({ error: "API Key inválida" }, { status: 401 })
+    const apiKey = request.headers.get("x-api-key")
+    if (apiKey !== expectedKey) {
+      return NextResponse.json({ error: "API key invalida" }, { status: 401 })
     }
 
     const body = await request.json()
@@ -30,44 +31,39 @@ export async function POST(request: NextRequest) {
       utmSource,
       utmMedium,
       utmCampaign,
-      activeCampaignId
+      activeCampaignId,
     } = body
 
-    // Validações
     if (!email) {
-      return NextResponse.json({ error: "Email é obrigatório" }, { status: 400 })
+      return NextResponse.json({ error: "Email e obrigatorio" }, { status: 400 })
     }
 
     if (!webinarSlug && !webinarId) {
-      return NextResponse.json({ error: "webinarSlug ou webinarId é obrigatório" }, { status: 400 })
+      return NextResponse.json({ error: "webinarSlug ou webinarId e obrigatorio" }, { status: 400 })
     }
 
-    // Buscar webinar
-    let webinar
-    if (webinarId) {
-      webinar = await prisma.webinar.findUnique({ where: { id: webinarId } })
-    } else {
-      webinar = await prisma.webinar.findUnique({ where: { slug: webinarSlug } })
-    }
+    const webinar = webinarId
+      ? await prisma.webinar.findUnique({ where: { id: webinarId } })
+      : await prisma.webinar.findUnique({ where: { slug: webinarSlug } })
 
     if (!webinar) {
-      return NextResponse.json({ error: "Webinar não encontrado" }, { status: 404 })
+      return NextResponse.json({ error: "Webinar nao encontrado" }, { status: 404 })
     }
 
-    // Verificar se lead já existe
+    const normalizedEmail = String(email).toLowerCase().trim()
+
     let lead = await prisma.lead.findUnique({
       where: {
         webinarId_email: {
           webinarId: webinar.id,
-          email: email.toLowerCase().trim()
-        }
-      }
+          email: normalizedEmail,
+        },
+      },
     })
 
     const accessToken = generateToken()
 
     if (lead) {
-      // Atualizar lead existente
       lead = await prisma.lead.update({
         where: { id: lead.id },
         data: {
@@ -77,36 +73,33 @@ export async function POST(request: NextRequest) {
           activeCampaignId: activeCampaignId || lead.activeCampaignId,
           utmSource: utmSource || lead.utmSource,
           utmMedium: utmMedium || lead.utmMedium,
-          utmCampaign: utmCampaign || lead.utmCampaign
-        }
+          utmCampaign: utmCampaign || lead.utmCampaign,
+        },
       })
     } else {
-      // Criar novo lead
       lead = await prisma.lead.create({
         data: {
-          email: email.toLowerCase().trim(),
-          name: name || email.split("@")[0],
+          email: normalizedEmail,
+          name: name || normalizedEmail.split("@")[0],
           phone: phone || null,
           accessToken,
           webinarId: webinar.id,
           activeCampaignId,
           utmSource,
           utmMedium,
-          utmCampaign
-        }
+          utmCampaign,
+        },
       })
 
-      // Registrar evento
       await prisma.leadEvent.create({
         data: {
           leadId: lead.id,
           eventType: "LEAD_REGISTERED",
-          data: { source: "webhook", utmSource, utmMedium, utmCampaign }
-        }
+          data: { source: "webhook", utmSource, utmMedium, utmCampaign },
+        },
       })
     }
 
-    // Gerar URL de acesso
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://sistema-webnar.vercel.app"
     const accessUrl = `${baseUrl}/w/${webinar.slug}?token=${accessToken}`
 
@@ -116,15 +109,15 @@ export async function POST(request: NextRequest) {
         id: lead.id,
         email: lead.email,
         name: lead.name,
-        phone: lead.phone
+        phone: lead.phone,
       },
       accessUrl,
       accessToken,
       webinar: {
         id: webinar.id,
         name: webinar.name,
-        slug: webinar.slug
-      }
+        slug: webinar.slug,
+      },
     })
   } catch (error) {
     console.error("[Webhook Lead] Error:", error)

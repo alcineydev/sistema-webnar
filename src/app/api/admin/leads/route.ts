@@ -5,63 +5,72 @@ import crypto from "crypto"
 
 export const dynamic = "force-dynamic"
 
+async function getCurrentUserId() {
+  const session = await auth()
+  if (!session?.user?.email) return null
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    select: { id: true },
+  })
+
+  return user?.id || null
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // Verificar autenticação admin usando auth() do NextAuth v5
-    const session = await auth()
-
-    if (!session?.user?.email) {
-      console.log("[Admin Leads API] No session found")
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    const userId = await getCurrentUserId()
+    if (!userId) {
+      return NextResponse.json({ error: "Nao autorizado" }, { status: 401 })
     }
 
     const { email, name, phone, webinarId } = await request.json()
 
     if (!email || !name || !webinarId) {
-      return NextResponse.json({ error: "Email, nome e webinarId são obrigatórios" }, { status: 400 })
+      return NextResponse.json({ error: "Email, nome e webinarId sao obrigatorios" }, { status: 400 })
     }
 
-    // Verificar se webinar existe
-    const webinar = await prisma.webinar.findUnique({
-      where: { id: webinarId }
+    const webinar = await prisma.webinar.findFirst({
+      where: { id: webinarId, createdById: userId },
+      select: { id: true },
     })
 
     if (!webinar) {
-      return NextResponse.json({ error: "Webinar não encontrado" }, { status: 404 })
+      return NextResponse.json({ error: "Webinar nao encontrado" }, { status: 404 })
     }
 
-    // Verificar se já existe
+    const normalizedEmail = String(email).toLowerCase().trim()
+    const normalizedPhone = phone?.replace(/\D/g, "") || null
+
     const existing = await prisma.lead.findUnique({
       where: {
         webinarId_email: {
           webinarId,
-          email: email.toLowerCase().trim()
-        }
-      }
+          email: normalizedEmail,
+        },
+      },
     })
 
     if (existing) {
-      return NextResponse.json({ error: "Este email já está cadastrado neste webinar" }, { status: 409 })
+      return NextResponse.json({ error: "Este email ja esta cadastrado neste webinar" }, { status: 409 })
     }
 
-    // Criar lead
     const lead = await prisma.lead.create({
       data: {
-        email: email.toLowerCase().trim(),
-        name,
-        phone: phone?.replace(/\D/g, "") || null,
+        email: normalizedEmail,
+        name: String(name).trim(),
+        phone: normalizedPhone,
         accessToken: crypto.randomBytes(32).toString("hex"),
-        webinarId
-      }
+        webinarId,
+      },
     })
 
-    // Registrar evento
     await prisma.leadEvent.create({
       data: {
         leadId: lead.id,
         eventType: "LEAD_REGISTERED",
-        data: { source: "admin-manual" }
-      }
+        data: { source: "admin-manual" },
+      },
     })
 
     return NextResponse.json({ success: true, lead })

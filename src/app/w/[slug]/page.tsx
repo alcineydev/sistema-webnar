@@ -17,7 +17,6 @@ interface Webinar {
   faviconUrl: string | null
   loginBgType: string | null
   loginBgImage: string | null
-  loginBgCode: string | null
   firstLessonSlug: string | null
 }
 
@@ -138,7 +137,6 @@ export default function WebinarEntryPage() {
       logoDarkUrl={webinar.logoDarkUrl}
       loginBgType={webinar.loginBgType}
       loginBgImage={webinar.loginBgImage}
-      loginBgCode={webinar.loginBgCode}
       initialToken={token}
       onSuccess={(newLead) => {
         setLead(newLead)
