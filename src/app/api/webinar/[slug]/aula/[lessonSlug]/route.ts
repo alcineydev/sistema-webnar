@@ -14,7 +14,7 @@ type LessonRelease = {
   slug: string
   title: string
   order: number
-  thumbnailUrl: string | null
+  thumbnailUrl?: string | null
   releaseType: string
   releaseAt: Date | null
   releaseAfterHours: number | null
