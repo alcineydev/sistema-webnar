@@ -5,16 +5,15 @@ import { authConfig } from "@/lib/auth.config"
 const { auth } = NextAuth(authConfig)
 
 export default auth((request) => {
-  const { pathname } = request.nextUrl
+  const { pathname, origin } = request.nextUrl
 
-  // Never redirect login to itself.
+  // Keep legacy URL /admin/login but serve a public route outside /admin layout.
   if (pathname === "/admin/login") {
-    return NextResponse.next()
+    return NextResponse.rewrite(new URL("/auth/admin-login", origin))
   }
 
   if (pathname.startsWith("/admin") && !request.auth?.user) {
-    const loginUrl = new URL("/admin/login", request.nextUrl.origin)
-    return NextResponse.redirect(loginUrl)
+    return NextResponse.redirect(new URL("/admin/login", origin))
   }
 
   return NextResponse.next()
