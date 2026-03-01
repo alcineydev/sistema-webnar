@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/.prisma/tenant"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("TENANT_DATABASE_URL")
+}
+
+// ==========================================
+// WEBINARS
+// ==========================================
+model Webinar {
+  id                String         @id @default(cuid())
+  name              String
+  slug              String         @unique
+  description       String?
+  status            WebinarStatus  @default(DRAFT)
+
+  // Visual
+  logoUrl           String?
+  logoLightUrl      String?
+  logoDarkUrl       String?
+  faviconUrl        String?
+  bannerUrl         String?
+  primaryColor      String?        @default("#6366f1")
+
+  // Login background
+  loginBgType       String?        @default("code") // image, gif, code
+  loginBgImage      String?
+  loginBgCode       String?        @db.Text
+
+  // Integracoes
+  n8nWebhookUrl     String?
+  activeCampaignListId String?
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  lessons           Lesson[]
+  leads             Lead[]
+  webhooks          Webhook[]
+
+  @@index([slug])
+  @@index([status])
+}
+
+enum WebinarStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// ==========================================
+// AULAS
+// ==========================================
+model Lesson {
+  id                String         @id @default(cuid())
+  title             String
+  slug              String
+  description       String?        @db.Text
+  videoUrl          String
+  videoDuration     Int?
+  thumbnailUrl      String?
+  order             Int            @default(0)
+  isActive          Boolean        @default(true)
+
+  // Liberacao
+  releaseType       String         @default("immediate") // immediate, scheduled, sequential
+  releaseAt         DateTime?
+  releaseAfterHours Int?
+
+  // Oferta
+  offerUrl          String?
+  offerButtonText   String?
+  offerShowAt       Int?
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  webinar           Webinar        @relation(fields: [webinarId], references: [id], onDelete: Cascade)
+  webinarId         String
+  progress          LeadProgress[]
+  events            LeadEvent[]
+
+  @@unique([webinarId, slug])
+  @@index([webinarId, order])
+}
+
+// ==========================================
+// LEADS
+// ==========================================
+model Lead {
+  id                String         @id @default(cuid())
+  email             String
+  name              String
+  phone             String?
+  accessToken       String?        @unique
+  status            LeadStatus     @default(ACTIVE)
+
+  // Tracking
+  firstAccessAt     DateTime?
+  lastAccessAt      DateTime?
+  totalWatchTime    Int            @default(0)
+  utmSource         String?
+  utmMedium         String?
+  utmCampaign       String?
+  activeCampaignId  String?
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  webinar           Webinar        @relation(fields: [webinarId], references: [id], onDelete: Cascade)
+  webinarId         String
+  progress          LeadProgress[]
+  events            LeadEvent[]
+
+  @@unique([webinarId, email])
+  @@index([webinarId, status])
+  @@index([accessToken])
+}
+
+enum LeadStatus {
+  ACTIVE
+  INACTIVE
+  CONVERTED
+  UNSUBSCRIBED
+}
+
+// ==========================================
+// PROGRESSO DO LEAD
+// ==========================================
+model LeadProgress {
+  id              String         @id @default(cuid())
+  watchedSeconds  Int            @default(0)
+  percentWatched  Float          @default(0)
+  isCompleted     Boolean        @default(false)
+  completedAt     DateTime?
+
+  // Oferta
+  offerShown      Boolean        @default(false)
+  offerShownAt    DateTime?
+  offerClicked    Boolean        @default(false)
+  offerClickedAt  DateTime?
+  offerClickCount Int            @default(0)
+
+  startedAt       DateTime       @default(now())
+  lastWatchedAt   DateTime       @default(now())
+
+  lead            Lead           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId          String
+  lesson          Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId        String
+
+  @@unique([leadId, lessonId])
+  @@index([leadId])
+  @@index([lessonId])
+}
+
+// ==========================================
+// EVENTOS DO LEAD
+// ==========================================
+model LeadEvent {
+  id              String         @id @default(cuid())
+  eventType       EventType
+  data            Json?
+  videoTime       Int?
+  userAgent       String?
+  ipAddress       String?
+  createdAt       DateTime       @default(now())
+
+  lead            Lead           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId          String
+  lesson          Lesson?        @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  lessonId        String?
+
+  @@index([leadId, eventType])
+  @@index([lessonId, eventType])
+  @@index([createdAt])
+}
+
+enum EventType {
+  LEAD_REGISTERED
+  WEBINAR_ACCESSED
+  VIDEO_PLAY
+  VIDEO_PAUSE
+  VIDEO_SEEK
+  VIDEO_PROGRESS_25
+  VIDEO_PROGRESS_50
+  VIDEO_PROGRESS_75
+  VIDEO_COMPLETED
+  VIDEO_ABANDONED
+  OFFER_SHOWN
+  OFFER_CLICKED
+}
+
+// ==========================================
+// WEBHOOKS
+// ==========================================
+model Webhook {
+  id          String         @id @default(cuid())
+  name        String
+  url         String
+  events      String[]
+  isActive    Boolean        @default(true)
+  secret      String?
+  lastFiredAt DateTime?
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  webinar     Webinar        @relation(fields: [webinarId], references: [id], onDelete: Cascade)
+  webinarId   String
+}
+
+// ==========================================
+// CONFIGURACOES DO TENANT
+// ==========================================
+model TenantSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

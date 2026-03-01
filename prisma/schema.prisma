@@ -1,279 +1,219 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/master"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-// ADMIN / USUÁRIOS
+// ==========================================
+// USUARIOS DO SISTEMA
+// ==========================================
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  name          String?
-  password      String?
-  role          UserRole  @default(ADMIN)
+  password      String
+  name          String
+  role          String    @default("admin") // superadmin, admin, collaborator
   emailVerified DateTime?
   image         String?
+
+  // Relacionamentos
+  tenant        Tenant?   @relation(fields: [tenantId], references: [id])
+  tenantId      String?
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  webinars      Webinar[]
-  accounts      Account[]
-  sessions      Session[]
 }
 
-enum UserRole {
-  SUPER_ADMIN
-  ADMIN
-}
-
-// WEBINAR
-model Webinar {
-  id              String         @id @default(cuid())
+// ==========================================
+// TENANTS (CLIENTES)
+// ==========================================
+model Tenant {
+  id              String    @id @default(cuid())
   name            String
-  slug            String         @unique
-  description     String?
-  status          WebinarStatus  @default(DRAFT)
-  logoUrl         String?
-  bannerUrl       String?
-  primaryColor    String?        @default("#6366f1")
-  offerUrl        String?
-  offerButtonText String?        @default("Quero Aproveitar")
-  urgencyMessage  String?
-  countdownEnd    DateTime?
-  releaseType     ReleaseType    @default(IMMEDIATE)
-  activeCampaignListId  String?
-  n8nWebhookUrl         String?
-
-  // Logos por tema
-  logoLightUrl      String?   // Logo para tema claro
-  logoDarkUrl       String?   // Logo para tema escuro
-
-  // Favicon
-  faviconUrl        String?
-
-  // Background da tela de login
-  loginBgType       String?   @default("code") // "image", "gif", "code"
-  loginBgImage      String?   // URL da imagem ou GIF
-  loginBgCode       String?   @db.Text // Código HTML/CSS/JS
-
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  createdById     String
-  createdBy       User           @relation(fields: [createdById], references: [id])
-  lessons         Lesson[]
-  leads           Lead[]
-
-  @@index([slug])
-  @@index([status])
-}
-
-enum WebinarStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
-enum ReleaseType {
-  IMMEDIATE
-  SCHEDULED
-  SEQUENTIAL
-}
-
-// AULAS
-model Lesson {
-  id                String        @id @default(cuid())
-  title             String
-  slug              String
-  description       String?
-  videoUrl          String
-  videoDuration     Int?
-  thumbnailUrl      String?
-  order             Int           @default(0)
-  isActive          Boolean       @default(true)
-  releaseType       String        @default("immediate") // immediate, scheduled, sequential
-  releaseAt         DateTime?
-  releaseAfterHours Int?          // Para sequential: horas após completar aula anterior
-  offerUrl          String?
-  offerButtonText   String?
-  offerShowAt       Int?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  webinarId         String
-  webinar           Webinar       @relation(fields: [webinarId], references: [id], onDelete: Cascade)
-  progress          LeadProgress[]
-  events            LeadEvent[]
-
-  @@unique([webinarId, slug])
-  @@index([webinarId, order])
-}
-
-// LEADS
-model Lead {
-  id              String        @id @default(cuid())
+  slug            String    @unique
   email           String
-  name            String
   phone           String?
-  accessToken     String?       @unique
-  firstAccessAt   DateTime?
-  status          LeadStatus    @default(ACTIVE)
-  lastAccessAt    DateTime?
-  totalWatchTime  Int           @default(0)
-  pushSubscription String?
-  pushEnabled     Boolean       @default(false)
-  activeCampaignId String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  utmSource       String?
-  utmMedium       String?
-  utmCampaign     String?
-  webinarId       String
-  webinar         Webinar       @relation(fields: [webinarId], references: [id], onDelete: Cascade)
-  progress        LeadProgress[]
-  events          LeadEvent[]
+  document        String?   // CPF ou CNPJ
 
-  @@unique([webinarId, email])
-  @@index([webinarId, status])
-  @@index([webinarId, lastAccessAt])
-  @@index([accessToken])
+  // Banco de dados do tenant
+  databaseUrl     String?   // URL do banco isolado
+  databaseName    String?
+
+  // Dominio personalizado
+  customDomain    String?   @unique
+  domainVerified  Boolean   @default(false)
+
+  // Visual
+  logoUrl         String?
+  faviconUrl      String?
+  primaryColor    String?   @default("#6366f1")
+
+  // Status
+  status          String    @default("active") // active, suspended, cancelled
+
+  // Relacionamentos
+  users           User[]
+  subscription    Subscription?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
-enum LeadStatus {
-  ACTIVE
-  INACTIVE
-  CONVERTED
-  UNSUBSCRIBED
+// ==========================================
+// PLANOS
+// ==========================================
+model Plan {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  description     String?
+
+  // Precos
+  priceMonthly    Float
+  priceQuarterly  Float?
+  priceYearly     Float?
+
+  // Limites
+  maxWebinars     Int       @default(-1) // -1 = ilimitado
+  maxLessons      Int       @default(-1)
+  maxLeadsMonth   Int       @default(-1)
+  maxStorageGB    Int       @default(-1)
+  maxUsers        Int       @default(1)
+
+  // Recursos
+  customDomain    Boolean   @default(false)
+  whiteLabel      Boolean   @default(false)
+  webhooks        Boolean   @default(false)
+  pixels          Boolean   @default(false)
+  prioritySupport Boolean   @default(false)
+
+  // UI
+  isPopular       Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
+
+  // Relacionamentos
+  subscriptions   Subscription[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
-// PROGRESSO DO LEAD
-model LeadProgress {
-  id              String        @id @default(cuid())
-  watchedSeconds  Int           @default(0)
-  percentWatched  Float         @default(0)
-  isCompleted     Boolean       @default(false)
-  completedAt     DateTime?
-  offerShown      Boolean       @default(false)
-  offerShownAt    DateTime?
-  offerClicked    Boolean       @default(false)
-  offerClickedAt  DateTime?
-  offerClickCount Int           @default(0)
-  startedAt       DateTime      @default(now())
-  lastWatchedAt   DateTime      @default(now())
-  leadId          String
-  lead            Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  lessonId        String
-  lesson          Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+// ==========================================
+// ASSINATURAS
+// ==========================================
+model Subscription {
+  id                  String    @id @default(cuid())
 
-  @@unique([leadId, lessonId])
-  @@index([leadId])
-  @@index([lessonId])
+  // Relacionamentos
+  tenant              Tenant    @relation(fields: [tenantId], references: [id])
+  tenantId            String    @unique
+  plan                Plan      @relation(fields: [planId], references: [id])
+  planId              String
+
+  // Asaas
+  asaasCustomerId     String?
+  asaasSubscriptionId String?
+
+  // Status
+  status              String    @default("active") // active, overdue, cancelled, suspended
+  billingCycle        String    @default("monthly") // monthly, quarterly, yearly
+
+  // Datas
+  currentPeriodStart  DateTime?
+  currentPeriodEnd    DateTime?
+  cancelledAt         DateTime?
+
+  // Pagamento
+  payments            Payment[]
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }
 
-// EVENTOS (TRACKING)
-model LeadEvent {
-  id              String        @id @default(cuid())
-  eventType       EventType
-  data            Json?
-  videoTime       Int?
-  createdAt       DateTime      @default(now())
-  userAgent       String?
-  ipAddress       String?
-  leadId          String
-  lead            Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  lessonId        String?
-  lesson          Lesson?       @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+// ==========================================
+// PAGAMENTOS
+// ==========================================
+model Payment {
+  id             String       @id @default(cuid())
 
-  @@index([leadId, eventType])
-  @@index([lessonId, eventType])
-  @@index([createdAt])
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  subscriptionId String
+
+  // Asaas
+  asaasPaymentId String?      @unique
+
+  // Valores
+  amount         Float
+  netAmount      Float?
+
+  // Status
+  status         String       // pending, confirmed, received, overdue, refunded
+  billingType    String       // PIX, BOLETO, CREDIT_CARD
+
+  // Datas
+  dueDate        DateTime?
+  paymentDate    DateTime?
+
+  // Webhook source (se veio de integracao)
+  source         String?      // asaas, hotmart, kiwify, ticto, cartpanda
+  externalId     String?
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
-enum EventType {
-  LEAD_REGISTERED
-  WEBINAR_ACCESSED
-  VIDEO_PLAY
-  VIDEO_PAUSE
-  VIDEO_SEEK
-  VIDEO_PROGRESS_25
-  VIDEO_PROGRESS_50
-  VIDEO_PROGRESS_75
-  VIDEO_COMPLETED
-  VIDEO_ABANDONED
-  OFFER_SHOWN
-  OFFER_CLICKED
-  PUSH_SUBSCRIBED
-  PUSH_UNSUBSCRIBED
-  PUSH_RECEIVED
-  PUSH_CLICKED
-  LEAD_INACTIVE
-}
-
-// PUSH NOTIFICATIONS
-model PushNotification {
-  id              String        @id @default(cuid())
+// ==========================================
+// PAGINAS (PAGE BUILDER)
+// ==========================================
+model Page {
+  id              String    @id @default(cuid())
   title           String
-  body            String
-  url             String?
-  icon            String?
-  status          PushStatus    @default(PENDING)
-  sentAt          DateTime?
-  error           String?
-  scheduledFor    DateTime?
-  webinarId       String?
-  leadId          String?
-  createdAt       DateTime      @default(now())
+  slug            String    @unique
 
-  @@index([status, scheduledFor])
+  // Tipo
+  type            String    @default("normal") // home, normal, 404, terms, privacy
+
+  // Conteudo
+  htmlContent     String?   @db.Text
+  cssContent      String?   @db.Text
+  jsContent       String?   @db.Text
+
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+
+  // Status
+  status          String    @default("draft") // draft, published
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
-enum PushStatus {
-  PENDING
-  SENT
-  FAILED
-}
-
-// NEXTAUTH MODELS
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-
-// CONFIGURAÇÕES DO SISTEMA
+// ==========================================
+// CONFIGURACOES DO SISTEMA
+// ==========================================
 model SystemSettings {
-  id            String   @id @default(cuid())
-  key           String   @unique
-  value         String?  @db.Text
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==========================================
+// WEBHOOKS DE INTEGRACAO
+// ==========================================
+model PaymentWebhook {
+  id        String   @id @default(cuid())
+  source    String   // hotmart, kiwify, ticto, cartpanda
+  event     String
+  payload   Json
+  processed Boolean  @default(false)
+  error     String?
+  createdAt DateTime @default(now())
 }

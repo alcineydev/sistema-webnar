@@ -1,24 +1,25 @@
-import NextAuth from "next-auth"
 import { NextResponse } from "next/server"
-import { authConfig } from "@/lib/auth.config"
+import { auth } from "@/lib/auth"
 
-const { auth } = NextAuth(authConfig)
+export default auth((req) => {
+  const { nextUrl } = req
+  const isLoggedIn = !!req.auth
 
-export default auth((request) => {
-  const { pathname, origin } = request.nextUrl
+  if (isLoggedIn && nextUrl.pathname === "/login") {
+    const role = req.auth?.user?.role
 
-  // Keep legacy URL /admin/login but serve a public route outside /admin layout.
-  if (pathname === "/admin/login") {
-    return NextResponse.rewrite(new URL("/auth/admin-login", origin))
-  }
+    if (role === "superadmin") {
+      return NextResponse.redirect(new URL("/superadmin", nextUrl))
+    }
 
-  if (pathname.startsWith("/admin") && !request.auth?.user) {
-    return NextResponse.redirect(new URL("/admin/login", origin))
+    return NextResponse.redirect(new URL("/painel", nextUrl))
   }
 
   return NextResponse.next()
 })
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.jpg$|.*\\.svg$).*)",
+  ],
 }
